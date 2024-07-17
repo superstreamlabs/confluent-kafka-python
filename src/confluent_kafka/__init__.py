@@ -60,8 +60,8 @@ __all__ = ['admin', 'Consumer',
 
 __version__ = version()[0]
 
-SuperstreamFactory.set_consumer(ConfluentProducer)
-SuperstreamFactory.set_producer(ConfluentConsumer)
+SuperstreamFactory.set_consumer(ConfluentConsumer)
+SuperstreamFactory.set_producer(ConfluentProducer)
 
 class ThrottleEvent(object):
     """
