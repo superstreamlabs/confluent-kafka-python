@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 import os
-from setuptools import setup, find_packages
-from distutils.core import Extension
 import platform
+from distutils.core import Extension
+
+from setuptools import find_packages, setup
+from setuptools import find_packages, setup
 
 work_dir = os.path.dirname(os.path.realpath(__file__))
 mod_dir = os.path.join(work_dir, 'src', 'confluent_kafka')
@@ -12,6 +14,7 @@ ext_dir = os.path.join(mod_dir, 'src')
 INSTALL_REQUIRES = [
     'futures;python_version<"3.2"',
     'enum34;python_version<"3.4"',
+    'superstream-py'
 ]
 
 TEST_REQUIRES = [
