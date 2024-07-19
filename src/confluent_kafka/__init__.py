@@ -62,6 +62,7 @@ __version__ = version()[0]
 
 SuperstreamFactory.set_consumer(ConfluentConsumer)
 SuperstreamFactory.set_producer(ConfluentProducer)
+SuperstreamFactory.set_topic_partition(TopicPartition)
 
 class ThrottleEvent(object):
     """
