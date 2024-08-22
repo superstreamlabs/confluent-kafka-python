@@ -16,30 +16,37 @@
 # limitations under the License.
 #
 
-from .deserializing_consumer import DeserializingConsumer
-from .serializing_producer import SerializingProducer
-from .error import KafkaException, KafkaError
-from ._model import (Node,  # noqa: F401
-                     ConsumerGroupTopicPartitions,
-                     ConsumerGroupState,
-                     TopicCollection,
-                     TopicPartitionInfo,
-                     IsolationLevel)
+from superstream import SuperstreamFactory
 
-from .cimpl import (Producer,
-                    Consumer,
-                    Message,
-                    TopicPartition,
-                    Uuid,
-                    libversion,
-                    version,
-                    TIMESTAMP_NOT_AVAILABLE,
-                    TIMESTAMP_CREATE_TIME,
-                    TIMESTAMP_LOG_APPEND_TIME,
-                    OFFSET_BEGINNING,
-                    OFFSET_END,
-                    OFFSET_STORED,
-                    OFFSET_INVALID)
+from ._model import (
+    ConsumerGroupState,
+    ConsumerGroupTopicPartitions,
+    IsolationLevel,
+    Node,  # noqa: F401
+    TopicCollection,
+    TopicPartitionInfo,
+)
+from .cimpl import (
+    OFFSET_BEGINNING,
+    OFFSET_END,
+    OFFSET_INVALID,
+    OFFSET_STORED,
+    TIMESTAMP_CREATE_TIME,
+    TIMESTAMP_LOG_APPEND_TIME,
+    TIMESTAMP_NOT_AVAILABLE,
+    Message,
+    TopicPartition,
+    Uuid,
+    libversion,
+    version,
+)
+from .cimpl import Consumer as ConfluentConsumer
+from .cimpl import Producer as ConfluentProducer
+from .deserializing_consumer import DeserializingConsumer
+from .error import KafkaError, KafkaException
+from .serializing_producer import SerializingProducer
+from .superstream_consumer import SuperstreamConsumer as Consumer
+from .superstream_producer import SuperstreamProducer as Producer
 
 __all__ = ['admin', 'Consumer',
            'KafkaError', 'KafkaException',
@@ -53,6 +60,9 @@ __all__ = ['admin', 'Consumer',
 
 __version__ = version()[0]
 
+SuperstreamFactory.set_consumer(ConfluentConsumer)
+SuperstreamFactory.set_producer(ConfluentProducer)
+SuperstreamFactory.set_topic_partition(TopicPartition)
 
 class ThrottleEvent(object):
     """
