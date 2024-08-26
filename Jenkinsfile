@@ -17,14 +17,14 @@ pipeline {
     }
 
     stages {
-        // stage('Install twine') {
-        //     steps {            
-        //         sh """
-        //             pip3 install twine
-        //             python3 -m pip install urllib3==1.26.6
-        //         """
-        //     }
-        // }        
+        stage('Install twine') {
+            steps {            
+                sh """
+                    pip3 install twine
+                    python3 -m pip install urllib3==1.26.6
+                """
+            }
+        }        
         stage('Beta Release') {
             when {
                 branch '*-beta'
