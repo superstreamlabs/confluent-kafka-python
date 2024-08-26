@@ -36,9 +36,9 @@ pipeline {
                     enabled=1' | sudo tee /etc/yum.repos.d/confluent.repo
                 '''
 
-                sh "yum install -y librdkafka-devel"
-                sh "python3 -m pip install --no-binary confluent-kafka confluent-kafka"
-                sh "python3 -c 'import confluent_kafka; print(confluent_kafka.version())'"
+                sh "sudo yum install -y librdkafka-devel"
+                sh "sudo python3 -m pip install --no-binary confluent-kafka confluent-kafka"
+                sh "sudo python3 -c 'import confluent_kafka; print(confluent_kafka.version())'"
 
             }
         }        
