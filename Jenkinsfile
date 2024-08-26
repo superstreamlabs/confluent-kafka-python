@@ -2,11 +2,11 @@
 pipeline {
 
     agent {
-        docker {
+        // docker {
             label 'memphis-jenkins-big-fleet,'
-            image 'python:3.11.9'
-            args '-u root'
-        }
+        //     image 'python:3.11.9'
+        //     args '-u root'
+        // }
     }
 
     environment {
@@ -19,74 +19,57 @@ pipeline {
     stages {
         stage('Prepare Environment') {
             steps {            
+               sh "sudo yum install -y epel-release"
+               sh "sudo yum install -y https://repo.ius.io/ius-release-el7.rpm"
+               sh "sudo yum install -y python3.11 python3.11-pip"
+               sh "sudo alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1"
+               sh "python3 --version"
+               sh "yum install -y python3 python3-pip python3-devel gcc make cyrus-sasl-gssapi krb5-workstation"
+               sh "rpm --import https://packages.confluent.io/rpm/7.0/archive.key"
                 sh """
-                    pip3 install twine
-                    python3 -m pip install urllib3==1.26.6
+                sudo echo '
+                [Confluent-Clients]
+                name=Confluent Clients repository
+                baseurl=https://packages.confluent.io/clients/rpm/centos/$releasever/$basearch
+                gpgcheck=1
+                gpgkey=https://packages.confluent.io/clients/rpm/archive.key
+                enabled=1' | sudo tee /etc/yum.repos.d/confluent.repo
                 """
-                sh """
-                    apt update -y
-                    # Install build tools and Kerberos support.
-                    echo "krb5-config krb5-config/default_realm string 5" | debconf-set-selections
-                    #apt install -y wget software-properties-common lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
-                    DEBIAN_FRONTEND=noninteractive apt install -y wget software-properties-common lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
-
-
-                    # Install the latest version of librdkafka:
-
-                    wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add -
-
-                    add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
-
-                """
-                sh    """apt install -y librdkafka-dev
-
-
-                    #
-                    # Now build and install confluent-kafka-python as your standard user
-                    # (e.g., exit the root shell first).
-                    #
-                   """
-                sh " python3 -m pip install --no-binary confluent-kafka confluent-kafka"
-
-
-                //     # Verify that confluent_kafka is installed:
-                //   """
-                sh """  
-                    python3 -c 'import confluent_kafka; print(confluent_kafka.version())'                 
-                """
-                
+                sh "yum install -y librdkafka-devel"
+                sh "python3 -m pip install --no-binary confluent-kafka confluent-kafka"
+                sh "python3 -c 'import confluent_kafka; print(confluent_kafka.version())'"
 
             }
         }        
-        stage('Beta Release') {
-            when {
-                branch '*-beta'
-            }            
-            steps {
-                script {
-                    sh 'git config --global --add safe.directory $(pwd)'
-                    env.GIT_AUTHOR = sh(script: 'git log -1 --pretty=%an', returnStdout: true).trim()
-                    env.COMMIT_MESSAGE = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
-                    def triggerCause = currentBuild.getBuildCauses().find { it._class == 'hudson.model.Cause$UserIdCause' }
-                    env.TRIGGERED_BY = triggerCause ? triggerCause.userId : 'Commit'
-                }                
-                script {
-                    def version = readFile('version-beta.conf').trim()
-                    env.versionTag = version
-                    echo "Using version from version-beta.conf: ${env.versionTag}"               
-                }
-                sh """
-                  sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-beta/g" setup.py
-                """ 
-                sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${versionTag}'/g\" setup.py"
-                sh """               
-                   python3 setup.py sdist
-                """
-                withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
-                        sh 'twine upload -u $USR -p $PSW dist/*'
-                    }                                                 
-            }
-        }
+        // stage('Beta Release') {
+        //     when {
+        //         branch '*-beta'
+        //     }            
+        //     steps {
+        //         script {
+        //             sh 'git config --global --add safe.directory $(pwd)'
+        //             env.GIT_AUTHOR = sh(script: 'git log -1 --pretty=%an', returnStdout: true).trim()
+        //             env.COMMIT_MESSAGE = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+        //             def triggerCause = currentBuild.getBuildCauses().find { it._class == 'hudson.model.Cause$UserIdCause' }
+        //             env.TRIGGERED_BY = triggerCause ? triggerCause.userId : 'Commit'
+        //         }                
+        //         script {
+        //             def version = readFile('version-beta.conf').trim()
+        //             env.versionTag = version
+        //             echo "Using version from version-beta.conf: ${env.versionTag}"               
+        //         }
+        //         sh """
+        //           sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-beta/g" setup.py
+        //         """ 
+        //         sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${versionTag}'/g\" setup.py"
+        //         sh """               
+        //            python3 setup.py sdist
+        //         """
+        //         withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
+        //                 sh 'twine upload -u $USR -p $PSW dist/*'
+        //             }                                                 
+        //     }
+        // }
         // stage('Prod Release') {
         //     when {
         //         branch '3.5.1'
