@@ -25,7 +25,8 @@ pipeline {
                sh "sudo alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1"
                sh "python3 --version"
                sh "sudo yum install -y python3 python3-pip python3-devel gcc make cyrus-sasl-gssapi krb5-workstation"
-               sh "sudo rpm --import https://packages.confluent.io/rpm/7.0/archive.key"
+            //    sh "sudo rpm --import https://packages.confluent.io/rpm/7.0/archive.key"
+               sh 'sudo rpm --import https://packages.confluent.io/rpm/7.0/archive.key'
                 sh """
                 sudo echo '
                 [Confluent-Clients]
