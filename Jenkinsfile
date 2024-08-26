@@ -33,7 +33,7 @@ pipeline {
 
                     wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add -
 
-                    add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
+                    add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
 
                     apt update
 
