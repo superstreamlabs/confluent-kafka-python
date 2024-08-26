@@ -46,11 +46,10 @@ pipeline {
                   sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-beta/g" setup.py
                 """ 
                 sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${versionTag}'/g\" setup.py"
-                sh "cat setup.py"
-                // sh "python3 setup.py sdist" 
-                // withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
-                //         sh 'twine upload -u $USR -p $PSW dist/*'
-                //     }                                                 
+                sh "python3 setup.py sdist" 
+                withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
+                        sh 'twine upload -u $USR -p $PSW dist/*'
+                    }                                                 
             }
         }
         // stage('Prod Release') {
