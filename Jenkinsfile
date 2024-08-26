@@ -19,32 +19,27 @@ pipeline {
     stages {
         stage('Prepare Environment') {
             steps {            
-               sh "sudo yum install -y epel-release"
+            //    sh "sudo yum install -y epel-release"
             //    sh "sudo yum install -y https://repo.ius.io/ius-release-el7.rpm"
                sh "sudo yum install -y python3.11 python3.11-pip"
                sh "sudo alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1"
                sh "python3 --version"
                sh "sudo yum install -y python3 python3-pip python3-devel gcc make cyrus-sasl-gssapi krb5-workstation"
                sh "sudo rpm --import https://packages.confluent.io/rpm/7.0/archive.key"
-                // sh '''
-                //     # Get release version and architecture
-                //     releasever=$(rpm -E %centos)
-                //     basearch=$(uname -m)
-                    
-                //     # Write the Confluent repository file with actual values
-                //     sudo tee /etc/yum.repos.d/confluent.repo <<EOF
-                // [Confluent-Clients]
-                // name=Confluent Clients repository
-                // baseurl=https://packages.confluent.io/clients/rpm/centos/$releasever/$basearch
-                // gpgcheck=1
-                // gpgkey=https://packages.confluent.io/clients/rpm/archive.key
-                // enabled=1
-                // EOF
-                // '''
+                sh '''
+                    sudo tee -a /etc/yum.repos.d/confluent.repo > /dev/null << EOL
+                    [Confluent-Clients]
+                    name=Confluent Clients repository
+                    baseurl=https://packages.confluent.io/clients/rpm/centos/$releasever/$basearch
+                    gpgcheck=1
+                    gpgkey=https://packages.confluent.io/clients/rpm/archive.key
+                    enabled=1
+                    EOL
+                '''
                 sh "cat /etc/yum.repos.d/confluent.repo"
-                sh "sudo yum install -y librdkafka-devel"
-                sh "sudo python3 -m pip install --no-binary confluent-kafka confluent-kafka"
-                sh "sudo python3 -c 'import confluent_kafka; print(confluent_kafka.version())'"
+                // sh "sudo yum install -y librdkafka-devel"
+                // sh "sudo python3 -m pip install --no-binary confluent-kafka confluent-kafka"
+                // sh "sudo python3 -c 'import confluent_kafka; print(confluent_kafka.version())'"
 
             }
         }        
