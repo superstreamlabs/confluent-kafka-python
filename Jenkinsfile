@@ -27,13 +27,14 @@ pipeline {
                sh "sudo yum install -y python3 python3-pip python3-devel gcc make cyrus-sasl-gssapi krb5-workstation"
                sh "sudo rpm --import https://packages.confluent.io/rpm/7.0/archive.key"
                 sh '''
-                    sudo echo '
-                    [Confluent-Clients]
-                    name=Confluent Clients repository
-                    baseurl=https://packages.confluent.io/clients/rpm/centos/$releasever/$basearch
-                    gpgcheck=1
-                    gpgkey=https://packages.confluent.io/clients/rpm/archive.key
-                    enabled=1' | sudo tee /etc/yum.repos.d/confluent.repo
+                    sudo tee /etc/yum.repos.d/confluent.repo <<EOF
+                [Confluent-Clients]
+                name=Confluent Clients repository
+                baseurl=https://packages.confluent.io/clients/rpm/centos/$releasever/$basearch
+                gpgcheck=1
+                gpgkey=https://packages.confluent.io/clients/rpm/archive.key
+                enabled=1
+                EOF
                 '''
                 sh "cat /etc/yum.repos.d/confluent.repo"
                 sh "sudo yum install -y librdkafka-devel"
