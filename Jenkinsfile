@@ -24,18 +24,12 @@ pipeline {
             apt update -y
             apt install -y wget software-properties-common twine lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
             wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add -
-            #add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
-            #apt update
-            #apt install -y librdkafka-dev 
-
-                wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.5.0.tar.gz
-                tar -xvzf v2.5.0.tar.gz
-                cd librdkafka-2.5.0/ 
-                ./configure
-                make
-                make install
-                #export C_INCLUDE_PATH=/usr/local/include/librdkafka/
-                #export LIBRARY_PATH=/usr/local/include/librdkafka/
+            #wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.5.0.tar.gz
+            #tar -xvzf v2.5.0.tar.gz
+            #cd librdkafka-2.5.0/ 
+            #./configure
+            #make
+            #make install
             add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
             apt update
             apt install -y librdkafka-dev                 
