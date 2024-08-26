@@ -75,14 +75,14 @@ trove_classifiers = [
     'Topic :: Software Development :: Libraries :: Python Modules',
 ]
 
-setup(name='confluent-kafka',
+setup(name='superstream-confluent-kafka-test',
       # Make sure to bump CFL_VERSION* in confluent_kafka/src/confluent_kafka.h
       # and version in docs/conf.py.
       version='2.4.0',
       description='Confluent\'s Python client for Apache Kafka',
-      author='Confluent Inc',
-      author_email='support@confluent.io',
-      url='https://github.com/confluentinc/confluent-kafka-python',
+      author='Superstream Labs',
+      author_email='support@superstream.ai',
+      url='https://github.com/superstreamlabs/confluent-kafka-python.git',
       ext_modules=[module],
       packages=find_packages('src'),
       package_dir={'': 'src'},
