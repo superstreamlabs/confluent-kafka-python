@@ -65,8 +65,8 @@ pipeline {
                 """ 
                 sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${versionTag}'/g\" setup.py"
                 sh """  
-                    export C_INCLUDE_PATH=/usr/local/include/librdkafka/
-                    export LIBRARY_PATH=/usr/local/include/librdkafka/                             
+                    export C_INCLUDE_PATH=/usr/local/lib:$C_INCLUDE_PATH
+                    export LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH                             
                     python3 setup.py sdist
                 """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
