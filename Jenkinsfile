@@ -2,11 +2,11 @@
 pipeline {
 
     agent {
-        // docker {
+        docker {
             label 'memphis-jenkins-big-fleet,'
-        //     image 'python:3.11.9'
-        //     args '-u root'
-        // }
+            image 'python:3.11.9'
+            args '-u root'
+        }
     }
 
     environment {
@@ -18,34 +18,25 @@ pipeline {
 
     stages {
         stage('Prepare Environment') {
-            steps {            
-            //    sh "sudo yum install -y epel-release"
-            //    sh "sudo yum install -y https://repo.ius.io/ius-release-el7.rpm"
-                sh """
-                    sudo yum clean all
-                    sudo rm -rf /var/cache/yum
-                """
-                sh "rm -rf /etc/yum.repos.d/confluent.repo || true"
-                sh "sudo yum install -y python3.11 python3.11-pip"
-                sh "sudo alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1"
-                sh "python3 --version"
-                sh "sudo yum install -y python3 python3-pip python3-devel gcc make cyrus-sasl-gssapi krb5-workstation"
-                sh "sudo rpm --import https://packages.confluent.io/rpm/7.0/archive.key"
-                sh '''
-                sudo bash -c "cat <<EOF > /etc/yum.repos.d/confluent.repo
-[Confluent-Clients]
-name=Confluent Clients repository
-baseurl=https://packages.confluent.io/clients/rpm/centos/\$releasever/\$basearch
-gpgcheck=1
-gpgkey=https://packages.confluent.io/clients/rpm/archive.key
-enabled=1
-EOF"
-                '''
-                sh "cat /etc/yum.repos.d/confluent.repo"
-                sh "sudo yum install -y librdkafka-devel"
-                sh "sudo python3 -m pip install --no-binary confluent-kafka confluent-kafka"
-                sh "sudo python3 -c 'import confluent_kafka; print(confluent_kafka.version())'"
+            steps {
+              sh """
+                apt update -y
+                apt install -y wget software-properties-common lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
 
+              """            
+              sh """
+                wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.5.0.tar.gz
+                tar -xvzf v2.5.0.tar.gz
+                cd v2.5.0.tar.gz
+                cd librdkafka-2.5.0/ 
+                ./configure
+                make
+                make install
+              """
+              sh """
+                python3 -m pip install --no-binary confluent-kafka confluent-kafka
+                python3 -c 'import confluent_kafka; print(confluent_kafka.version())'
+              """
             }
         }        
         // stage('Beta Release') {
