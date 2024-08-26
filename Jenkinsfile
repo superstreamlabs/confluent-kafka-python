@@ -2,7 +2,11 @@
 pipeline {
 
     agent {
-            label 'memphis-jenkins-small-fleet-agent'
+        docker {
+            label 'memphis-jenkins-big-fleet,'
+            image 'python:3.11.9'
+            args '-u root'
+        }
     }
 
     environment {
@@ -13,14 +17,14 @@ pipeline {
     }
 
     stages {
-        stage('Install twine') {
-            steps {            
-                sh """
-                    pip3 install twine
-                    python3 -m pip install urllib3==1.26.6
-                """
-            }
-        }        
+        // stage('Install twine') {
+        //     steps {            
+        //         sh """
+        //             pip3 install twine
+        //             python3 -m pip install urllib3==1.26.6
+        //         """
+        //     }
+        // }        
         stage('Beta Release') {
             when {
                 branch '*-beta'
@@ -39,11 +43,9 @@ pipeline {
                     echo "Using version from version-beta.conf: ${env.versionTag}"               
                 }
                 sh """
-                  sed -i -r "s/superstream-confluent-kafka-test/superstream-confluent-kafka-test-beta/g" setup.py
+                  sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-test-beta/g" setup.py
                 """ 
-                // sh """
-                //   sed -i "s/version=\\"[0-9].[0-9].[0-9]/version=\\"$versionTag/g" setup.py
-                // """ 
+                sh "sed -i -r 's/version = \"[0-9]+\\.[0-9]+\\.[0-9]+\"/version = \"$versionTag\"/g' pyproject.toml"
                 sh "python3 setup.py sdist" 
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
                         sh '~/.local/bin/twine upload -u $USR -p $PSW dist/*'
