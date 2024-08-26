@@ -36,7 +36,6 @@ pipeline {
 
                     add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
 
-                    apt update
 
                     apt install -y librdkafka-dev
 
