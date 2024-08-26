@@ -35,7 +35,7 @@ pipeline {
                     gpgkey=https://packages.confluent.io/clients/rpm/archive.key
                     enabled=1' | sudo tee /etc/yum.repos.d/confluent.repo
                 '''
-
+                sh "cat /etc/yum.repos.d/confluent.repo"
                 sh "sudo yum install -y librdkafka-devel"
                 sh "sudo python3 -m pip install --no-binary confluent-kafka confluent-kafka"
                 sh "sudo python3 -c 'import confluent_kafka; print(confluent_kafka.version())'"
