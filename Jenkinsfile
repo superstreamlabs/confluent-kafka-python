@@ -27,6 +27,11 @@ pipeline {
                sh "sudo yum install -y python3 python3-pip python3-devel gcc make cyrus-sasl-gssapi krb5-workstation"
                sh "sudo rpm --import https://packages.confluent.io/rpm/7.0/archive.key"
                 sh '''
+                    # Get release version and architecture
+                    releasever=$(rpm -E %centos)
+                    basearch=$(uname -m)
+                    
+                    # Write the Confluent repository file with actual values
                     sudo tee /etc/yum.repos.d/confluent.repo <<EOF
                 [Confluent-Clients]
                 name=Confluent Clients repository
