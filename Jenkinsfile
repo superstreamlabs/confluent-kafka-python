@@ -24,6 +24,7 @@ pipeline {
                     python3 -m pip install urllib3==1.26.6
                 """
                 sh """
+                    apt update -y
                     # Install build tools and Kerberos support.
 
                     apt install -y wget software-properties-common lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
