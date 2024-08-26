@@ -19,24 +19,38 @@ pipeline {
     stages {
         stage('Prepare Environment') {
             steps {            
-
                 sh """
-                    # Install necessary Python packages and system dependencies
-                    apt update && apt install -y wget software-properties-common lsb-release gcc make \
-                        python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user \
-                        librdkafka-dev
-                    
-                    # Install Python packages in one command
-                    python3 -m pip install confluent-kafka twine urllib3==1.26.6
+                    pip3 install twine
+                    python3 -m pip install urllib3==1.26.6
+                """
+                sh """
+                    # Install build tools and Kerberos support.
 
-                    # Add Confluent APT repository and install librdkafka
-                    wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add - && \
-                    add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main" && \
-                    apt update && apt install -y librdkafka-dev
+                    apt install -y wget software-properties-common lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
 
-                    # Reinstall confluent-kafka with no binary option and verify installation
-                    python3 -m pip install --no-binary confluent-kafka confluent-kafka && \
-                    python3 -c 'import confluent_kafka; print(confluent_kafka.version())'
+
+                    # Install the latest version of librdkafka:
+
+                    wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add -
+
+                    add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
+
+                    apt update
+
+                    apt install -y librdkafka-dev
+
+
+                    #
+                    # Now build and install confluent-kafka-python as your standard user
+                    # (e.g., exit the root shell first).
+                    #
+
+                    python3 -m pip install --no-binary confluent-kafka confluent-kafka
+
+
+                    # Verify that confluent_kafka is installed:
+
+                    python3 -c 'import confluent_kafka; print(confluent_kafka.version())'                 
                 """
                 
 
@@ -63,7 +77,9 @@ pipeline {
                   sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-beta/g" setup.py
                 """ 
                 sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${versionTag}'/g\" setup.py"
-                sh "python3 setup.py sdist" 
+                sh """               
+                   python3 setup.py sdist
+                """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
                         sh 'twine upload -u $USR -p $PSW dist/*'
                     }                                                 
