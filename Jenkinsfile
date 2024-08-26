@@ -21,6 +21,10 @@ pipeline {
             steps {            
             //    sh "sudo yum install -y epel-release"
             //    sh "sudo yum install -y https://repo.ius.io/ius-release-el7.rpm"
+                sh """
+                    sudo yum clean all
+                    sudo rm -rf /var/cache/yum
+                """
                 sh "rm -rf /etc/yum.repos.d/confluent.repo || true"
                 sh "sudo yum install -y python3.11 python3.11-pip"
                 sh "sudo alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1"
