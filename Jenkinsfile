@@ -19,24 +19,27 @@ pipeline {
     stages {
         stage('Prepare Environment') {
             steps {            
-                sh """
 
+                sh """
+                    # Install necessary Python packages and system dependencies
                     apt update && apt install -y wget software-properties-common lsb-release gcc make \
                         python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user \
                         librdkafka-dev
                     
-
+                    # Install Python packages in one command
                     python3 -m pip install confluent-kafka twine urllib3==1.26.6
 
-
+                    # Add Confluent APT repository and install librdkafka
                     wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add - && \
-                    add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main" && \
+                    add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main" && \
                     apt update && apt install -y librdkafka-dev
 
-
+                    # Reinstall confluent-kafka with no binary option and verify installation
                     python3 -m pip install --no-binary confluent-kafka confluent-kafka && \
-                    python3 -c 'import confluent_kafka; print(confluent_kafka.version())'                  
+                    python3 -c 'import confluent_kafka; print(confluent_kafka.version())'
                 """
+                
+
             }
         }        
         stage('Beta Release') {
