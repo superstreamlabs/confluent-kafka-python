@@ -43,13 +43,14 @@ pipeline {
                     echo "Using version from version-beta.conf: ${env.versionTag}"               
                 }
                 sh """
-                  sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-test-beta/g" setup.py
+                  sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-beta/g" setup.py
                 """ 
-                sh "sed -i -r 's/version = \"[0-9]+\\.[0-9]+\\.[0-9]+\"/version = \"$versionTag\"/g' setup.py"
-                sh "python3 setup.py sdist" 
-                withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
-                        sh '~/.local/bin/twine upload -u $USR -p $PSW dist/*'
-                    }                                                 
+                sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${versionTag}'/g\" setup.py"
+                sh "cat setup.py"
+                // sh "python3 setup.py sdist" 
+                // withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
+                //         sh 'twine upload -u $USR -p $PSW dist/*'
+                //     }                                                 
             }
         }
         // stage('Prod Release') {
