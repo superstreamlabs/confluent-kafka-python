@@ -34,8 +34,11 @@ pipeline {
                 ./configure
                 make
                 make install
-                export C_INCLUDE_PATH=/usr/local/include/librdkafka/
-                export LIBRARY_PATH=/usr/local/include/librdkafka/
+                #export C_INCLUDE_PATH=/usr/local/include/librdkafka/
+                #export LIBRARY_PATH=/usr/local/include/librdkafka/
+            add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
+            apt update
+            apt install -y librdkafka-dev                 
         
             python3 -m pip install --no-binary confluent-kafka confluent-kafka
             python3 -c 'import confluent_kafka; print(confluent_kafka.version())'
