@@ -46,12 +46,11 @@ pipeline {
                     # (e.g., exit the root shell first).
                     #
                    """
-                sh """   
-                    python3 -m pip install --no-binary confluent-kafka confluent-kafka
+                sh " python3 -m pip install --no-binary confluent-kafka confluent-kafka"
 
 
-                    # Verify that confluent_kafka is installed:
-                  """
+                //     # Verify that confluent_kafka is installed:
+                //   """
                 sh """  
                     python3 -c 'import confluent_kafka; print(confluent_kafka.version())'                 
                 """
