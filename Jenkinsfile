@@ -44,7 +44,7 @@ pipeline {
                 // sh """
                 //   sed -i -r "s/version=\\"[0-9].[0-9].[0-9]/version=\\"$versionTag/g" setup.py
                 // """ 
-                sh "sed -i 's/version=[\"'][^\"']*[\"']/version=\"$versionTag\"/' setup.py"
+                sh "sed -i 's/version=[\"'\''][^\"'\'']*[\"'\'']/version="$versionTag"/' setup.py"
                 sh "cat setup.py"                                   
             }
         }
