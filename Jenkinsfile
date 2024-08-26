@@ -34,7 +34,8 @@ pipeline {
                 ./configure
                 make
                 make install
-                whereis librdkafka
+                export C_INCLUDE_PATH=/usr/local/include/librdkafka/
+                export LIBRARY_PATH=/usr/local/include/librdkafka/
         
             python3 -m pip install --no-binary confluent-kafka confluent-kafka
             python3 -c 'import confluent_kafka; print(confluent_kafka.version())'
@@ -63,7 +64,9 @@ pipeline {
                   sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-beta/g" setup.py
                 """ 
                 sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${versionTag}'/g\" setup.py"
-                sh """               
+                sh """  
+                    export C_INCLUDE_PATH=/usr/local/include/librdkafka/
+                    export LIBRARY_PATH=/usr/local/include/librdkafka/                             
                     python3 setup.py sdist
                 """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
