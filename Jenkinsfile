@@ -4,8 +4,7 @@ pipeline {
     agent {
         docker {
             label 'memphis-jenkins-big-fleet,'
-            // image 'python:3.11.9'
-            image 'python:3.12.5'
+            image 'python:3.11.9-bullseye'
             args '-u root'
         }
     }
@@ -22,17 +21,11 @@ pipeline {
             steps {
             sh """
             apt update -y
-            apt install -y wget software-properties-common twine lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
-            wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.5.0.tar.gz
-            tar -xvzf v2.5.0.tar.gz
-            cd librdkafka-2.5.0/ 
-            ./configure
-            make
-            make install
+            apt install -y wget software-properties-common lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
             wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add -
-            add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
+            add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
             apt update
-            apt install -y librdkafka-dev                 
+            apt install -y librdkafka-dev               
             """
             }
         }        
@@ -58,9 +51,7 @@ pipeline {
                 """ 
                 sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${versionTag}'/g\" setup.py"
                 sh """  
-                    export C_INCLUDE_PATH=/usr/local/lib/
-                    export LIBRARY_PATH=/usr/local/lib/ 
-                    python setup.py sdist bdist_wheel bdist_egg
+                    C_INCLUDE_PATH=/usr/include/librdkafka LIBRARY_PATH=/usr/include/librdkafka python setup.py sdist bdist_wheel bdist_egg
                 """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
                         sh 'twine upload -u $USR -p $PSW dist/*.tar.gz'
