@@ -55,7 +55,7 @@ pipeline {
                     C_INCLUDE_PATH=/usr/include/librdkafka LIBRARY_PATH=/usr/include/librdkafka python setup.py sdist bdist_wheel bdist_egg
                 """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
-                        sh 'twine upload -u $USR -p $PSW dist/*.tar.gz'
+                        sh 'twine upload -u $USR -p $PSW dist/*.whl'
                     }                                                 
             }
         }
