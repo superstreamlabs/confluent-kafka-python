@@ -20,6 +20,7 @@ pipeline {
         stage('Prepare Environment') {
             steps {
             sh """
+            export DEBIAN_FRONTEND=noninteractive
             apt update -y
             apt install -y wget software-properties-common lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
             wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add -
