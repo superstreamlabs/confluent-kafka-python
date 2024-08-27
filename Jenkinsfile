@@ -33,7 +33,6 @@ pipeline {
             add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
             apt update
             apt install -y librdkafka-dev                 
-            python3 -m pip install --no-binary confluent-kafka confluent-kafka
             python3 -c 'import confluent_kafka; print(confluent_kafka.version())'
             """
             }
@@ -61,8 +60,8 @@ pipeline {
                 sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${versionTag}'/g\" setup.py"
                 sh """  
                     export C_INCLUDE_PATH=/usr/local/lib/
-                    export LIBRARY_PATH=/usr/local/lib/                 
-                    python3 setup.py sdist
+                    export LIBRARY_PATH=/usr/local/lib/ 
+                    python setup.py sdist bdist_wheel bdist_egg
                 """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
                         sh 'twine upload -u $USR -p $PSW dist/*'
