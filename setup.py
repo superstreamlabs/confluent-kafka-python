@@ -6,7 +6,6 @@ from distutils.core import Extension
 
 from pathlib import Path
 from setuptools import find_packages, setup
-from setuptools import find_packages, setup
 
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
@@ -79,14 +78,23 @@ trove_classifiers = [
     'Topic :: Software Development :: Libraries :: Python Modules',
 ]
 
+
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
+
 setup(name='superstream-confluent-kafka',
+
       # Make sure to bump CFL_VERSION* in confluent_kafka/src/confluent_kafka.h
       # and version in docs/conf.py.
       version='2.4.0',
       description='Confluent\'s Python client for Apache Kafka',
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       author='Superstream Labs',
       author_email='support@superstream.ai',
       url='https://github.com/superstreamlabs/confluent-kafka-python.git',
+
       ext_modules=[module],
       packages=find_packages('src'),
       package_dir={'': 'src'},
