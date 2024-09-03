@@ -5,7 +5,6 @@ import platform
 from distutils.core import Extension
 
 from setuptools import find_packages, setup
-from setuptools import find_packages, setup
 
 work_dir = os.path.dirname(os.path.realpath(__file__))
 mod_dir = os.path.join(work_dir, 'src', 'confluent_kafka')
@@ -75,11 +74,16 @@ trove_classifiers = [
     'Topic :: Software Development :: Libraries :: Python Modules',
 ]
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(name='confluent-kafka',
       # Make sure to bump CFL_VERSION* in confluent_kafka/src/confluent_kafka.h
       # and version in docs/conf.py.
       version='2.4.0',
       description='Confluent\'s Python client for Apache Kafka',
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       author='Confluent Inc',
       author_email='support@confluent.io',
       url='https://github.com/confluentinc/confluent-kafka-python',
