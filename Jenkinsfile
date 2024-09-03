@@ -56,7 +56,7 @@ pipeline {
                 """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
                         sh "mv dist/superstream_confluent_kafka_beta-${env.versionTag}-cp311-cp311-linux_x86_64.whl dist/superstream_confluent_kafka_beta-${env.versionTag}-py3-none-any.whl"
-                        sh 'twine upload -u $USR -p $PSW dist/*.whl'
+                        sh 'twine upload -u $USR -p $PSW dist/*'
                     }                                                 
             }
         }
