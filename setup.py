@@ -4,8 +4,12 @@ import os
 import platform
 from distutils.core import Extension
 
+from pathlib import Path
 from setuptools import find_packages, setup
 from setuptools import find_packages, setup
+
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
 
 work_dir = os.path.dirname(os.path.realpath(__file__))
 mod_dir = os.path.join(work_dir, 'src', 'confluent_kafka')
