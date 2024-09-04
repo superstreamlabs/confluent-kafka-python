@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Optional
 
-from superstream import SuperstreamConsumerInterceptor
-
 from confluent_kafka.cimpl import Consumer as _ConsumerImpl
+
+from .consumer_interceptor import SuperstreamConsumerInterceptor
 
 
 class SuperstreamConsumer(_ConsumerImpl):

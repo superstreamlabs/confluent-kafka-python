@@ -1,8 +1,8 @@
 from typing import Dict
 
-from superstream import SuperstreamProducerInterceptor
-
 from confluent_kafka.cimpl import Producer as _ProducerImpl
+
+from .producer_interceptor import SuperstreamProducerInterceptor
 
 
 class SuperstreamProducer(_ProducerImpl):
