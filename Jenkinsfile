@@ -40,30 +40,7 @@ pipeline {
         }        
         stage('Beta Release') {
             when {
-                branch '*-beta'
-            }            
-            steps {
-                script {
-                    def version = readFile('version-beta.conf').trim()
-                    env.versionTag = version
-                    echo "Using version from version-beta.conf: ${env.versionTag}"               
-                }
-                sh """
-                  sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-beta/g" setup.py
-                """ 
-                sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${env.versionTag}'/g\" setup.py"
-                sh """  
-                    C_INCLUDE_PATH=/usr/include/librdkafka LIBRARY_PATH=/usr/include/librdkafka python setup.py sdist bdist_wheel
-                """
-                withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
-                        sh "mv dist/superstream_confluent_kafka_beta-${env.versionTag}-cp311-cp311-linux_x86_64.whl dist/superstream_confluent_kafka_beta-${env.versionTag}-py3-none-any.whl"
-                        sh 'twine upload -u $USR -p $PSW dist/*.whl'
-                }                                                 
-            }
-        }
-        stage('Test Release') {
-            when {
-                branch 'test'
+                branch 'beta'
             }            
             steps {
                 script {
