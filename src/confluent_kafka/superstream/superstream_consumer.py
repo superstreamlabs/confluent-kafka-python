@@ -1,14 +1,15 @@
 from typing import Any, Dict, List, Optional
 
-from superstream import SuperstreamConsumerInterceptor
-
 from confluent_kafka.cimpl import Consumer as _ConsumerImpl
+
+from .consumer_interceptor import SuperstreamConsumerInterceptor
 
 
 class SuperstreamConsumer(_ConsumerImpl):
     def __init__(self, config: Dict):
-        super().__init__(config)
         self._interceptor = SuperstreamConsumerInterceptor(config)
+        config = self._interceptor.superstream.wait_for_superstream_configs_sync(config)
+        super().__init__(config)
 
     def poll(self, *args, **kwargs) -> Any:
         message = super().poll(*args, **kwargs)

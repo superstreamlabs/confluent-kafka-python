@@ -1,0 +1,81 @@
+[project]
+name = "superstream-confluent-kafka"
+version = "2.4.0"
+description = "Confluent's Python client for Apache Kafka"
+authors = [
+    {name = "Superstream Labs", email = "support@superstream.ai"},
+]
+dependencies = [
+    "enum34;python_version<\"3.4\"",
+    "futures;python_version<\"3.2\"",
+    "pydantic>=2.8.2",
+    "nats-py>=2.7.2",
+    "protobuf>=4.25.3",
+    "asyncio>=3.4.3",
+    "requests>=2.31.0",
+    "jsonschema>=4.21.1",
+    "nest-asyncio>=1.6.0",
+    "zstandard>=0.23.0",
+]
+requires-python = ">=3.8"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://github.com/superstreamlabs/confluent-kafka-python.git"
+
+[project.optional-dependencies]
+schema-registry = [
+    "requests",
+]
+avro = [
+    "avro>=1.11.1,<2",
+    "fastavro>=0.23.0,<1.0;python_version<\"3.0\"",
+    "fastavro>=1.0;python_version>\"3.0\"",
+    "requests",
+]
+json = [
+    "jsonschema",
+    "pyrsistent;python_version>\"3.0\"",
+    "pyrsistent==0.16.1;python_version<\"3.0\"",
+    "requests",
+]
+protobuf = [
+    "protobuf",
+    "requests",
+]
+dev = [
+    "avro>=1.11.1,<2",
+    "fastavro>=0.23.0,<1.0;python_version<\"3.0\"",
+    "fastavro>=1.0;python_version>\"3.0\"",
+    "flake8",
+    "pytest-timeout",
+    "pytest;python_version>=\"3.0\"",
+    "pytest==4.6.4;python_version<\"3.0\"",
+    "requests",
+]
+doc = [
+    "avro>=1.11.1,<2",
+    "fastavro>=0.23.0,<1.0;python_version<\"3.0\"",
+    "fastavro>=1.0;python_version>\"3.0\"",
+    "requests",
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[tool.pdm]
+distribution = true
+package-dir = "src"
