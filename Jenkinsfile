@@ -40,7 +40,7 @@ pipeline {
         }        
         stage('Beta Release') {
             when {
-                branch 'beta'
+                branch '*-beta'
             }            
             steps {
                 script {
