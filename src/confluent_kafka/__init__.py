@@ -15,8 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-from superstream import SuperstreamFactory
+import nest_asyncio
 
 from ._model import (
     ConsumerGroupState,
@@ -45,8 +44,9 @@ from .cimpl import Producer as ConfluentProducer
 from .deserializing_consumer import DeserializingConsumer
 from .error import KafkaError, KafkaException
 from .serializing_producer import SerializingProducer
-from .superstream_consumer import SuperstreamConsumer as Consumer
-from .superstream_producer import SuperstreamProducer as Producer
+from .superstream.factory import SuperstreamFactory
+from .superstream.superstream_consumer import SuperstreamConsumer as Consumer
+from .superstream.superstream_producer import SuperstreamProducer as Producer
 
 __all__ = ['admin', 'Consumer',
            'KafkaError', 'KafkaException',
@@ -63,6 +63,7 @@ __version__ = version()[0]
 SuperstreamFactory.set_consumer(ConfluentConsumer)
 SuperstreamFactory.set_producer(ConfluentProducer)
 SuperstreamFactory.set_topic_partition(TopicPartition)
+nest_asyncio.apply()
 
 class ThrottleEvent(object):
     """

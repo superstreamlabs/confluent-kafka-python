@@ -33,13 +33,14 @@ pipeline {
                 wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add -
                 add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
                 apt update
-                apt install -y librdkafka-dev               
+                apt install -y librdkafka-dev 
+                pip install --user pdm
                 """
             }
         }        
         stage('Beta Release') {
             when {
-                branch '*-beta'
+                branch 'beta'
             }            
             steps {
                 script {
@@ -49,15 +50,21 @@ pipeline {
                 }
                 sh """
                   sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-beta/g" setup.py
+                  sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-beta/g" pyproject.toml
                 """ 
                 sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${env.versionTag}'/g\" setup.py"
+                sh "sed -i \'s/version = \"[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\"/version = \"${env.versionTag}\"/g\' pyproject.toml"
                 sh """  
                     C_INCLUDE_PATH=/usr/include/librdkafka LIBRARY_PATH=/usr/include/librdkafka python setup.py sdist bdist_wheel
                 """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
+                        sh "/tmp/.local/bin/pdm build"
                         sh "mv dist/superstream_confluent_kafka_beta-${env.versionTag}-cp311-cp311-linux_x86_64.whl dist/superstream_confluent_kafka_beta-${env.versionTag}-py3-none-any.whl"
-                        sh 'twine upload -u $USR -p $PSW dist/*.whl'
-                }                                                 
+                        sh"""
+                            ls -l dist/
+                            /tmp/.local/bin/pdm publish --no-build --username $USR --password $PSW
+                        """
+                }                                                  
             }
         }
         stage('Prod Release') {

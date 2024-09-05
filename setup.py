@@ -3,8 +3,8 @@
 import os
 import platform
 from distutils.core import Extension
-
 from pathlib import Path
+
 from setuptools import find_packages, setup
 
 this_directory = Path(__file__).parent
@@ -17,7 +17,6 @@ ext_dir = os.path.join(mod_dir, 'src')
 INSTALL_REQUIRES = [
     'futures;python_version<"3.2"',
     'enum34;python_version<"3.4"',
-    'superstream-py'
 ]
 
 TEST_REQUIRES = [
@@ -49,14 +48,23 @@ if platform.system() == 'Windows':
 else:
     librdkafka_libname = 'rdkafka'
 
+
+cimpl_dir_prefix = "src/confluent_kafka/src" 
+
 module = Extension('confluent_kafka.cimpl',
                    libraries=[librdkafka_libname],
-                   sources=[os.path.join(ext_dir, 'confluent_kafka.c'),
-                            os.path.join(ext_dir, 'Producer.c'),
-                            os.path.join(ext_dir, 'Consumer.c'),
-                            os.path.join(ext_dir, 'Metadata.c'),
-                            os.path.join(ext_dir, 'AdminTypes.c'),
-                            os.path.join(ext_dir, 'Admin.c')])
+                   sources=[os.path.join(cimpl_dir_prefix, 'confluent_kafka.c'),
+                            os.path.join(cimpl_dir_prefix, 'Producer.c'),
+                            os.path.join(cimpl_dir_prefix, 'Consumer.c'),
+                            os.path.join(cimpl_dir_prefix, 'Metadata.c'),
+                            os.path.join(cimpl_dir_prefix, 'AdminTypes.c'),
+                            os.path.join(cimpl_dir_prefix, 'Admin.c')])
+                #    sources=[os.path.join(ext_dir, 'confluent_kafka.c'),
+                #             os.path.join(ext_dir, 'Producer.c'),
+                #             os.path.join(ext_dir, 'Consumer.c'),
+                #             os.path.join(ext_dir, 'Metadata.c'),
+                #             os.path.join(ext_dir, 'AdminTypes.c'),
+                #             os.path.join(ext_dir, 'Admin.c')])
 
 
 def get_install_requirements(path):
@@ -79,18 +87,12 @@ trove_classifiers = [
 ]
 
 
-with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
-
-
 setup(name='superstream-confluent-kafka',
 
       # Make sure to bump CFL_VERSION* in confluent_kafka/src/confluent_kafka.h
       # and version in docs/conf.py.
       version='2.4.0',
       description='Confluent\'s Python client for Apache Kafka',
-      long_description=long_description,
-      long_description_content_type='text/markdown',
       author='Superstream Labs',
       author_email='support@superstream.ai',
       url='https://github.com/superstreamlabs/confluent-kafka-python.git',
@@ -98,7 +100,8 @@ setup(name='superstream-confluent-kafka',
       ext_modules=[module],
       packages=find_packages('src'),
       package_dir={'': 'src'},
-      data_files=[('', [os.path.join(work_dir, 'LICENSE.txt')])],
+    #   data_files=[('', [os.path.join(cimpl_dir_prefix, 'LICENSE.txt')])],
+      data_files=[('', ['LICENSE.txt'])],
       install_requires=INSTALL_REQUIRES,
       classifiers=trove_classifiers,
       extras_require={
