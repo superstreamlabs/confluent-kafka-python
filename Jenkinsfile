@@ -28,12 +28,12 @@ pipeline {
                 }                
                 sh """
                 export DEBIAN_FRONTEND=noninteractive
-                apt update -y
                 apt install -y wget twine software-properties-common lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
                 wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add -
                 add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
-                apt update
-                apt install -y librdkafka-dev               
+                apt update -y
+                apt install -y librdkafka-dev 
+                pip install --user pdm
                 """
             }
         }        
@@ -57,6 +57,27 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
                         sh "mv dist/superstream_confluent_kafka_beta-${env.versionTag}-cp311-cp311-linux_x86_64.whl dist/superstream_confluent_kafka_beta-${env.versionTag}-py3-none-any.whl"
                         sh 'twine upload -u $USR -p $PSW dist/*.whl'
+                }                                                 
+            }
+        }
+        stage('Test Release') {
+            when {
+                branch 'test'
+            }            
+            steps {
+                script {
+                    def version = readFile('version-beta.conf').trim()
+                    env.versionTag = version
+                    echo "Using version from version-beta.conf: ${env.versionTag}"               
+                }
+                sh """
+                  sed -i -r "s/superstream-confluent-kafka/superstream-confluent-kafka-beta/g" setup.py
+                """ 
+                sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${env.versionTag}'/g\" setup.py"
+                withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
+                        sh """
+                           pdm publish --username $USR --password $PSW
+                        """
                 }                                                 
             }
         }
