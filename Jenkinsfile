@@ -77,7 +77,8 @@ pipeline {
                 sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${env.versionTag}'/g\" setup.py"
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
                         sh """
-                           pdm publish --username $USR --password $PSW
+                            mv dist/superstream_confluent_kafka_beta-${env.versionTag}-cp311-cp311-linux_x86_64.whl dist/superstream_confluent_kafka_beta-${env.versionTag}-py3-none-any.whl"
+                           /tmp/.local/bin/pdm publish --username $USR --password $PSW
                         """
                 }                                                 
             }
@@ -97,7 +98,7 @@ pipeline {
                     C_INCLUDE_PATH=/usr/include/librdkafka LIBRARY_PATH=/usr/include/librdkafka python setup.py sdist bdist_wheel
                 """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
-                        sh "mv dist/superstream_confluent_kafka_beta-${env.versionTag}-cp311-cp311-linux_x86_64.whl dist/superstream_confluent_kafka_beta-${env.versionTag}-py3-none-any.whl"
+                        sh "mv dist/superstream_confluent_kafka_beta-${env.versionTag}-cp311-cp311-linux_x86_64.whl dist/superstream_confluent_kafka_beta-${env.versionTag}-py3-none-any.whl
                         sh 'twine upload -u $USR -p $PSW dist/*.whl'
                 }                
             }
