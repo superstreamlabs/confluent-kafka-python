@@ -82,7 +82,7 @@ pipeline {
                     C_INCLUDE_PATH=/usr/include/librdkafka LIBRARY_PATH=/usr/include/librdkafka python setup.py sdist bdist_wheel
                 """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
-                        sh "mv dist/superstream_confluent_kafka-${env.versionTag}-cp311-cp311-linux_x86_64.whl dist/superstream_confluent_kafka-${env.versionTag}-py3-none-any.whl"
+                        sh "mv dist/superstream_confluent_kafka-${env.versionTag}-cp311-cp311-linux_x86_64.whl dist/superstream_confluent_kafka-${env.versionTag}-py3.whl"
                         sh 'twine upload -u $USR -p $PSW dist/*.whl'
                 }                
             }
