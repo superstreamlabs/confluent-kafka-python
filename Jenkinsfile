@@ -35,6 +35,7 @@ pipeline {
                 apt update
                 apt install -y librdkafka-dev 
                 pip install --user pdm
+                pip install requests
                 """
             }
         }        
