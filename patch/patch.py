@@ -87,22 +87,29 @@ def patch_single(source_build, distribution_build, dest_dir, prefix):
             distribution_build_dir, distribution_dist_info, "RECORD"
         )
 
-        rec_dist = None
+        rec_dist = {"cimpl": [], ".dylibs": []}
         with open(distribution_record, "r") as file:
             dist_lines = file.readlines()
             for i, line in enumerate(dist_lines):
                 if line.startswith("confluent_kafka/cimpl"):
-                    rec_dist = line
-                    break
+                    rec_dist["cimpl"].append(line)
 
-        assert rec_dist is not None, "cimpl record not found in distribution wheel"
+                if line.startswith("confluent_kafka/.dylibs"):
+                    rec_dist[".dylibs"].append(line)
+
+        assert rec_dist["cimpl"], "cimpl not found in distribution wheel"
 
         with open(source_record, "r") as file:
             src_lines = file.readlines()
 
-        for i, line in enumerate(src_lines):
-            if line.startswith("confluent_kafka/cimpl"):
-                src_lines[i] = rec_dist
+        src_lines = [  # remove existing cimpl and dylibs
+            line
+            for line in src_lines
+            if not line.startswith("confluent_kafka/cimpl")
+            and not line.startswith("confluent_kafka/.dylibs")
+        ]
+
+        src_lines = rec_dist["cimpl"] + rec_dist[".dylibs"] + src_lines
 
         with open(source_record, "w") as file:
             file.writelines(src_lines)
@@ -132,7 +139,24 @@ def patch_single(source_build, distribution_build, dest_dir, prefix):
         with open(source_wheel, "w") as file:
             file.writelines(lines)
 
-    def create_patched_wheel(source_build_dir, source_build, distribution_build) -> str:
+    def patch_dylibs(source_build_dir, distribution_build_dir):
+        src_confluent_kafka = os.path.join(source_build_dir, "confluent_kafka")
+        distribution_confluent_kafka = os.path.join(
+            distribution_build_dir, "confluent_kafka"
+        )
+
+        src_dylibs = os.path.join(src_confluent_kafka, ".dylibs")
+        dist_dylibs = os.path.join(distribution_confluent_kafka, ".dylibs")
+        if not os.path.exists(dist_dylibs):
+            return
+        os.makedirs(src_dylibs, exist_ok=True)
+
+        for f in os.listdir(dist_dylibs):
+            dist_dylib = os.path.join(dist_dylibs, f)
+            src_dylib = os.path.join(src_dylibs, f)
+            os.rename(dist_dylib, src_dylib)
+
+    def create_patched_wheel(source_build_dir, distribution_build, prefix) -> str:
         # namever assumes the builds are prepared with the following convention
         # source_build = <name>-<version>-*
         name_version = os.path.basename(distribution_build).split("-")
@@ -166,10 +190,9 @@ def patch_single(source_build, distribution_build, dest_dir, prefix):
         patch_cimpl(source_build_dir, distribution_build_dir)
         patch_record(source_build_dir, distribution_build_dir)
         patch_wheel_txt(source_build_dir, distribution_build_dir)
+        patch_dylibs(source_build_dir, distribution_build_dir)
 
-        patched_whl = create_patched_wheel(
-            source_build_dir, source_build, distribution_build
-        )
+        patched_whl = create_patched_wheel(source_build_dir, distribution_build, prefix)
         os.rename(patched_whl, os.path.join(dest_dir, os.path.basename(patched_whl)))
 
 
@@ -211,9 +234,13 @@ if __name__ == "__main__":
         default="2.4.0",
         help="The version of confluent-kafka that will be used for patching.",
     )
-    parser.add_argument("--src", type=str, help="The file path to the superstream wheel file.")
     parser.add_argument(
-        "--prefix", type=str, help="The prefix to use for the patched superstream wheel files."
+        "--src", type=str, help="The file path to the superstream wheel file."
+    )
+    parser.add_argument(
+        "--prefix",
+        type=str,
+        help="The prefix to use for the patched superstream wheel files. The structure should be <name>-<version>",
     )
     parser.add_argument(
         "--output", type=str, help="The directory to save the patched wheel."
@@ -224,5 +251,6 @@ if __name__ == "__main__":
     print(f"Source: {args.src}")
     print(f"Package version: {args.version}")
     print(f"Output: {args.output}")
+    print(f"Prefix: {args.prefix}")
 
     patch(args.src, "confluent-kafka", args.version, args.output, args.prefix)
