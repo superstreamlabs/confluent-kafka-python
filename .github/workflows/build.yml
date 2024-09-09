@@ -4,16 +4,20 @@ on: [push, pull_request]
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-13, macos-14]
+        arch: [x86_64, arm64] # Specify architectures (x86_64 = AMD, arm64 = ARM)
+        exclude:
+          - os: windows-latest
+            arch: arm64  # Windows doesn't support arm64 builds yet
 
     steps:
       - uses: actions/checkout@v4
 
-      # Used to host cibuildwheel
+      # Set up Python environment
       - uses: actions/setup-python@v5
 
       - name: Install cibuildwheel
@@ -21,11 +25,10 @@ jobs:
 
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
-        # to supply options, put them in 'env', like:
-        # env:
-        #   CIBW_SOME_OPTION: value
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}  # Specify which architecture to build for
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          name: cibw-wheels-${{ matrix.os }}-${{ matrix.arch }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
