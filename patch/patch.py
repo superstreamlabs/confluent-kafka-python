@@ -2,6 +2,7 @@ import argparse
 import os
 import tempfile
 import zipfile
+import shutil
 
 import requests
 
@@ -72,7 +73,7 @@ def patch_single(source_build, distribution_build, dest_dir, prefix):
             for f in dist_cimpl_files:
                 dist_cimpl = os.path.join(distribution_confluent_kafka, f)
                 src_cimpl = os.path.join(src_confluent_kafka, f)
-                os.rename(dist_cimpl, src_cimpl)
+                shutil.move(dist_cimpl, src_cimpl)
 
     def patch_record(src_build_dir, distribution_build_dir):
         src_dist_info = [
@@ -154,7 +155,7 @@ def patch_single(source_build, distribution_build, dest_dir, prefix):
         for f in os.listdir(dist_dylibs):
             dist_dylib = os.path.join(dist_dylibs, f)
             src_dylib = os.path.join(src_dylibs, f)
-            os.rename(dist_dylib, src_dylib)
+            shutil.move(dist_dylib, src_dylib)
 
     def create_patched_wheel(source_build_dir, distribution_build, prefix) -> str:
         # namever assumes the builds are prepared with the following convention
@@ -193,7 +194,7 @@ def patch_single(source_build, distribution_build, dest_dir, prefix):
         patch_dylibs(source_build_dir, distribution_build_dir)
 
         patched_whl = create_patched_wheel(source_build_dir, distribution_build, prefix)
-        os.rename(patched_whl, os.path.join(dest_dir, os.path.basename(patched_whl)))
+        shutil.move(patched_whl, os.path.join(dest_dir, os.path.basename(patched_whl)))
 
 
 def patch(
