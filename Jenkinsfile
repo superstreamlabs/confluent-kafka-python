@@ -29,7 +29,7 @@ pipeline {
                 sh """
                 export DEBIAN_FRONTEND=noninteractive
                 apt update -y
-                apt install -y wget twine software-properties-common lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
+                apt install -y wget software-properties-common lsb-release gcc make python3 python3-pip python3-dev libsasl2-modules-gssapi-mit krb5-user
                 wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add -
                 add-apt-repository "deb https://packages.confluent.io/clients/deb \$(lsb_release -cs) main"
                 apt update
@@ -77,19 +77,24 @@ pipeline {
                     env.versionTag = version
                     echo "Using version from version.conf: ${env.versionTag}"               
                 }
-                sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${env.versionTag}'/g\" setup.py"
+                sh "sed -i \"s/version='[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+'/version='${env.versionTag}'/g\" pyproject.toml
                 sh """  
-                    C_INCLUDE_PATH=/usr/include/librdkafka LIBRARY_PATH=/usr/include/librdkafka python setup.py sdist bdist_wheel
+                    C_INCLUDE_PATH=/usr/include/librdkafka LIBRARY_PATH=/usr/include/librdkafka /tmp/.local/bin/pdm build
                 """
                 withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
-                        sh "mv dist/superstream_confluent_kafka-${env.versionTag}-cp311-cp311-linux_x86_64.whl dist/superstream_confluent_kafka-${env.versionTag}-py3-none-any.whl"
-                        sh 'twine upload -u $USR -p $PSW dist/*.whl'
+                        sh """
+                            python3 patch/patch.py --src "dist/superstream_confluent_kafka-${env.versionTag}-cp311-cp311-linux_x86_64.whl" --output "dist/" --prefix "superstream_confluent_kafka-${env.versionTag}"
+                        """
+                        sh"""
+                            rm dist/superstream_confluent_kafka-${env.versionTag}-cp311-cp311-linux_x86_64.whl
+                            /tmp/.local/bin/pdm publish --no-build --username $USR --password $PSW
+                        """
                 }                
             }
         }
         stage('Create Release'){
             when {
-                branch '3.5.1'
+                branch '2.4.0'
             }       
             steps {               
                 sh """
