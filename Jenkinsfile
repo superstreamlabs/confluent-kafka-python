@@ -61,7 +61,7 @@ pipeline {
                             python3 patch/patch.py --src "dist/superstream_confluent_kafka_beta-${env.versionTag}-cp311-cp311-linux_x86_64.whl" --output "dist/" --prefix "superstream_confluent_kafka_beta-${env.versionTag}"
                         """
                         sh"""
-                            ls -l dist/
+                            rm dist/superstream_confluent_kafka_beta-${env.versionTag}-cp311-cp311-linux_x86_64.whl
                             /tmp/.local/bin/pdm publish --no-build --username $USR --password $PSW
                         """
                 }                                                  
