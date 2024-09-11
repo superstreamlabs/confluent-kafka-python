@@ -56,7 +56,7 @@ pipeline {
                 sh """  
                     C_INCLUDE_PATH=/usr/include/librdkafka LIBRARY_PATH=/usr/include/librdkafka /tmp/.local/bin/pdm build
                 """
-                withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
+                withCredentials([usernamePassword(credentialsId: 'superstream-pypi', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
                         sh """
                             python3 patch/patch.py --src "dist/superstream_confluent_kafka_beta-${env.versionTag}-cp311-cp311-linux_x86_64.whl" --output "dist/" --prefix "superstream_confluent_kafka_beta-${env.versionTag}"
                         """
@@ -81,7 +81,7 @@ pipeline {
                 sh """  
                     C_INCLUDE_PATH=/usr/include/librdkafka LIBRARY_PATH=/usr/include/librdkafka /tmp/.local/bin/pdm build
                 """
-                withCredentials([usernamePassword(credentialsId: 'python_sdk', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
+                withCredentials([usernamePassword(credentialsId: 'superstream-pypi', usernameVariable: 'USR', passwordVariable: 'PSW')]) {
                         sh """
                             python3 patch/patch.py --src "dist/superstream_confluent_kafka-${env.versionTag}-cp311-cp311-linux_x86_64.whl" --output "dist/" --prefix "superstream_confluent_kafka-${env.versionTag}"
                         """
