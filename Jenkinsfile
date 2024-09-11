@@ -123,12 +123,20 @@ pipeline {
         always {
             cleanWs()
         }
-        // success {
-        //     sendSlackNotification('SUCCESS')
-        // }
-        // failure {
-        //     sendSlackNotification('FAILURE')
-        // }
+        success {           
+          script {
+            if (env.BRANCH_NAME == '2.4.0') {  
+                sendSlackNotification('SUCCESS')
+            }
+          }            
+        }
+        failure {
+          script {
+            if (env.BRANCH_NAME == '2.4.0') {  
+                sendSlackNotification('FAILURE')
+            }
+          }
+        }
     }    
 }
 
