@@ -98,7 +98,9 @@ class SerializationUtil:
                 json_format.ParseDict(json_dict, msg_desc)
             else:
                 json_format.Parse(json_dict, msg_desc)
-            return JsonToProtoResult(success=True, message_bytes=msg_desc.SerializeToString())
+            return JsonToProtoResult(
+                success=True, message_bytes=msg_desc.SerializeToString()
+            )
         except Exception:
             return JsonToProtoResult(success=False, message_bytes=None)
 
@@ -302,21 +304,230 @@ class KafkaUtil:
         "consume.callback.max.messages",
     ]
 
+    Defaults = {
+        "builtin.features": "gzip,snappy,ssl,sasl,regex,lz4,sasl_gssapi,sasl_plain,sasl_scram,plugins,zstd,sasl_oauthbearer,http,oidc",
+        "client.id": "rdkafka",
+        "metadata.broker.list": "",
+        "bootstrap.servers": "",
+        "message.max.bytes": 1000000,
+        "message.copy.max.bytes": 65535,
+        "receive.message.max.bytes": 100000000,
+        "max.in.flight.requests.per.connection": 1000000,
+        "max.in.flight": 1000000,
+        "topic.metadata.refresh.interval.ms": 300000,
+        "metadata.max.age.ms": 900000,
+        "topic.metadata.refresh.fast.interval.ms": 100,
+        "topic.metadata.refresh.fast.cnt": 10,
+        "topic.metadata.refresh.sparse": True,
+        "topic.metadata.propagation.max.ms": 30000,
+        "topic.blacklist": "",
+        "debug": "",
+        "socket.timeout.ms": 60000,
+        "socket.blocking.max.ms": 1000,
+        "socket.send.buffer.bytes": 0,
+        "socket.receive.buffer.bytes": 0,
+        "socket.keepalive.enable": False,
+        "socket.nagle.disable": False,
+        "socket.max.fails": 1,
+        "broker.address.ttl": 1000,
+        "broker.address.family": "any",
+        "socket.connection.setup.timeout.ms": 30000,
+        "connections.max.idle.ms": 0,
+        "reconnect.backoff.jitter.ms": 0,
+        "reconnect.backoff.ms": 100,
+        "reconnect.backoff.max.ms": 10000,
+        "statistics.interval.ms": 0,
+        "enabled_events": 0,
+        "error_cb": "",
+        "throttle_cb": "",
+        "stats_cb": "",
+        "log_cb": "",
+        "log_level": 6,
+        "log.queue": False,
+        "log.thread.name": True,
+        "enable.random.seed": True,
+        "log.connection.close": True,
+        "background_event_cb": "",
+        "socket_cb": "",
+        "connect_cb": "",
+        "closesocket_cb": "",
+        "open_cb": "",
+        "resolve_cb": "",
+        "opaque": "",
+        "default_topic_conf": "",
+        "internal.termination.signal": 0,
+        "api.version.request": True,
+        "api.version.request.timeout.ms": 10000,
+        "api.version.fallback.ms": 0,
+        "broker.version.fallback": "0.10.0",
+        "allow.auto.create.topics": False,
+        "security.protocol": "plaintext",
+        "ssl.cipher.suites": "",
+        "ssl.curves.list": "",
+        "ssl.sigalgs.list": "",
+        "ssl.key.location": "",
+        "ssl.key.password": "",
+        "ssl.key.pem": "",
+        "ssl_key": "",
+        "ssl.certificate.location": "",
+        "ssl.certificate.pem": "",
+        "ssl_certificate": "",
+        "ssl.ca.location": "",
+        "ssl.ca.pem": "",
+        "ssl_ca": "",
+        "ssl.ca.certificate.stores": "Root",
+        "ssl.crl.location": "",
+        "ssl.keystore.location": "",
+        "ssl.keystore.password": "",
+        "ssl.providers": "",
+        "ssl.engine.location": "",
+        "ssl.engine.id": "dynamic",
+        "ssl_engine_callback_data": "",
+        "enable.ssl.certificate.verification": True,
+        "ssl.endpoint.identification.algorithm": "https",
+        "ssl.certificate.verify_cb": "",
+        "sasl.mechanisms": "GSSAPI",
+        "sasl.mechanism": "GSSAPI",
+        "sasl.kerberos.service.name": "kafka",
+        "sasl.kerberos.principal": "kafkaclient",
+        "sasl.kerberos.kinit.cmd": '":"kinit-t"%{sasl.kerberos.keytab}"-k%{sasl.kerberos.principal}',
+        "sasl.kerberos.keytab": "",
+        "sasl.kerberos.min.time.before.relogin": 60000,
+        "sasl.username": "",
+        "sasl.password": "",
+        "sasl.oauthbearer.config": "",
+        "enable.sasl.oauthbearer.unsecure.jwt": False,
+        "oauthbearer_token_refresh_cb": "",
+        "sasl.oauthbearer.method": "default",
+        "sasl.oauthbearer.client.id": "",
+        "sasl.oauthbearer.client.secret": "",
+        "sasl.oauthbearer.scope": "",
+        "sasl.oauthbearer.extensions": "",
+        "sasl.oauthbearer.token.endpoint.url": "",
+        "plugin.library.paths": "",
+        "interceptors": "",
+        "group.id": "",
+        "group.instance.id": "",
+        "partition.assignment.strategy": "range,roundrobin",
+        "session.timeout.ms": 45000,
+        "heartbeat.interval.ms": 3000,
+        "group.protocol.type": "consumer",
+        "group.protocol": "classic",
+        "group.remote.assignor": "",
+        "coordinator.query.interval.ms": 600000,
+        "max.poll.interval.ms": 300000,
+        "enable.auto.commit": True,
+        "auto.commit.interval.ms": 5000,
+        "enable.auto.offset.store": True,
+        "queued.min.messages": 100000,
+        "queued.max.messages.kbytes": 65536,
+        "fetch.wait.max.ms": 500,
+        "fetch.queue.backoff.ms": 1000,
+        "fetch.message.max.bytes": 1048576,
+        "max.partition.fetch.bytes": 1048576,
+        "fetch.max.bytes": 52428800,
+        "fetch.min.bytes": 1,
+        "fetch.error.backoff.ms": 500,
+        "offset.store.method": "broker",
+        "isolation.level": "read_committed",
+        "consume_cb": "",
+        "rebalance_cb": "",
+        "offset_commit_cb": "",
+        "enable.partition.eof": False,
+        "check.crcs": False,
+        "client.rack": "",
+        "transactional.id": "",
+        "transaction.timeout.ms": 60000,
+        "enable.idempotence": False,
+        "enable.gapless.guarantee": False,
+        "queue.buffering.max.messages": 100000,
+        "queue.buffering.max.kbytes": 1048576,
+        "queue.buffering.max.ms": 5,
+        "linger.ms": 5,
+        "message.send.max.retries": 2147483647,
+        "retries": 2147483647,
+        "retry.backoff.ms": 100,
+        "retry.backoff.max.ms": 1000,
+        "queue.buffering.backpressure.threshold": 1,
+        "compression.codec": "none",
+        "compression.type": "none",
+        "batch.num.messages": 10000,
+        "batch.size": 1000000,
+        "delivery.report.only.error": False,
+        "dr_cb": "",
+        "dr_msg_cb": "",
+        "sticky.partitioning.linger.ms": 10,
+        "client.dns.lookup": "use_all_dns_ips",
+        "enable.metrics.push": True,
+        "request.required.acks": -1,
+        "acks": -1,
+        "request.timeout.ms": 30000,
+        "message.timeout.ms": 300000,
+        "delivery.timeout.ms": 300000,
+        "queuing.strategy": "fifo",
+        "produce.offset.report": False,
+        "partitioner": "consistent_random",
+        "partitioner_cb": "",
+        "msg_order_cmp": "",
+        "opaque": "",
+        "compression.codec": "inherit",
+        "compression.type": "none",
+        "compression.level": -1,
+        "auto.commit.enable": True,
+        "enable.auto.commit": True,
+        "auto.commit.interval.ms": 60000,
+        "auto.offset.reset": "largest",
+        "offset.store.path": ".",
+        "offset.store.sync.interval.ms": -1,
+        "offset.store.method": "broker",
+        "consume.callback.max.messages": 0,
+    }
+
     @staticmethod
     def is_valid_producer_key(key):
-        return key in KafkaUtil.ProducerConfigKeys or key in KafkaUtil.ProducerAndConsumerConfigKeys
+        return (
+            key in KafkaUtil.ProducerConfigKeys
+            or key in KafkaUtil.ProducerAndConsumerConfigKeys
+        )
 
     @staticmethod
     def is_valid_consumer_key(key):
-        return key in KafkaUtil.ConsumerConfigKeys or key in KafkaUtil.ProducerAndConsumerConfigKeys
-    
+        return (
+            key in KafkaUtil.ConsumerConfigKeys
+            or key in KafkaUtil.ProducerAndConsumerConfigKeys
+        )
+
     @staticmethod
     def extract_kafka_config(config: Dict[str, Any]) -> Dict[str, Any]:
         kafka_config = {}
         for key in config:
             if key in KafkaUtil.ProducerAndConsumerConfigKeys:
                 kafka_config[key] = config[key]
-        return kafka_config 
+        return kafka_config
+
+    @staticmethod
+    def enrich_producer_config(config: Dict[str, Any]) -> Dict[str, Any]:
+        enriched_config = config.copy() if config else {}
+        producer_keys = KafkaUtil.ProducerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        for key in producer_keys:
+            if key in enriched_config:
+                continue
+            if key in KafkaUtil.Defaults:
+                enriched_config[key] = KafkaUtil.Defaults[key]
+
+        return enriched_config
+
+    @staticmethod
+    def enrich_consumer_config(config: Dict[str, Any]) -> Dict[str, Any]:
+        enriched_config = config.copy() if config else {}
+        consumer_keys = KafkaUtil.ConsumerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        for key in consumer_keys:
+            if key in enriched_config:
+                continue
+            if key in KafkaUtil.Defaults:
+                enriched_config[key] = KafkaUtil.Defaults[key]
+
+        return enriched_config
 
     @staticmethod
     def copy_auth_config(configs):

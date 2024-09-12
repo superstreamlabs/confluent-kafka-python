@@ -6,22 +6,32 @@ import zstandard as zstd
 from confluent_kafka.superstream.constants import SuperstreamKeys
 from confluent_kafka.superstream.core import Superstream
 from confluent_kafka.superstream.types import SuperstreamClientType
-from confluent_kafka.superstream.utils import _try_convert_to_json, json_to_proto
+from confluent_kafka.superstream.utils import (
+    KafkaUtil,
+    _try_convert_to_json,
+    json_to_proto,
+)
 
 
 class SuperstreamProducerInterceptor:
     def __init__(self, config: Dict, producer_handler: Callable | None = None):
         self._compression_type = "zstd"
-        self._superstream_config_ = Superstream.init_superstream_props(config, SuperstreamClientType.PRODUCER)
+        self._superstream_config_ = Superstream.init_superstream_props(
+            config, SuperstreamClientType.PRODUCER
+        )
         self._producer_handler = producer_handler
 
     def set_producer_handler(self, producer_handler: Callable):
         self._producer_handler = producer_handler
 
+    def set_full_configuration(self, config: Dict[str, Any]):
+        full_config = KafkaUtil.enrich_producer_config(config)
+        self.superstream.set_full_client_configs(full_config)
+
     @property
     def superstream(self) -> Superstream:
         return self._superstream_config_.get(SuperstreamKeys.CONNECTION)
-    
+
     def produce(self, *args, **kwargs):
         topic_idx = 0
         value_idx = 1
@@ -29,14 +39,20 @@ class SuperstreamProducerInterceptor:
         on_delivery_idx = 4
         headers_index = 6
 
-        superstream: Superstream = self._superstream_config_.get(SuperstreamKeys.CONNECTION)
+        superstream: Superstream = self._superstream_config_.get(
+            SuperstreamKeys.CONNECTION
+        )
         if not superstream:
             self._producer_handler(*args, **kwargs)
             return
 
         topic = args[topic_idx]
         if len(args) > partition_idx or "partition" in kwargs:
-            partition = args[partition_idx] if len(args) > partition_idx else kwargs.get("partition")
+            partition = (
+                args[partition_idx]
+                if len(args) > partition_idx
+                else kwargs.get("partition")
+            )
             superstream.update_topic_partitions(topic, partition)
 
         if not superstream.superstream_ready:
@@ -87,7 +103,11 @@ class SuperstreamProducerInterceptor:
                 original_on_delivery_cb(err, msg)
 
         if len(args) > on_delivery_idx:
-            args = args[:on_delivery_idx] + (updated_on_delivery_cb,) + args[on_delivery_idx + 1 :]
+            args = (
+                args[:on_delivery_idx]
+                + (updated_on_delivery_cb,)
+                + args[on_delivery_idx + 1 :]
+            )
         elif "on_delivery" in kwargs:
             kwargs["on_delivery"] = updated_on_delivery_cb
 
@@ -98,7 +118,9 @@ class SuperstreamProducerInterceptor:
         # raise NotImplementedError
 
     def _serialize(self, json_msg: str) -> Union[bytes, Dict[str, Any]]:
-        superstream: Superstream = self._superstream_config_.get(SuperstreamKeys.CONNECTION)
+        superstream: Superstream = self._superstream_config_.get(
+            SuperstreamKeys.CONNECTION
+        )
         byte_msg = json_msg.encode("utf-8")
         headers: Dict[str, Any] = {}
 

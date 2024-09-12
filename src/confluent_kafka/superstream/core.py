@@ -124,6 +124,7 @@ class Superstream:
 
         self.client_hash = None
         self.superstream_configs = {}
+        self.optimized_config_received = False
 
     async def _request(self, subject: str, payload: bytes, timeout: float = 30, timeout_retries: int = 1):
         """
@@ -211,7 +212,7 @@ class Superstream:
         end_time = datetime.now() + timedelta(milliseconds=timeout)
 
         try:
-            while not self.superstream_configs:
+            while not self.optimized_config_received:
                 if datetime.now() > end_time:
                     raise Exception("client configuration was not set within the expected timeout period")
                 time.sleep(0.2)
@@ -346,8 +347,10 @@ class Superstream:
 
     async def send_client_config_update_req(self):
         try:
-            # req = ClientConfigUpdateReq(client_hash=self.client_hash, config=self.full_client_configs)
-            req = ClientConfigUpdateReq(client_hash=self.client_hash, config=self.configs)
+            full_config = self.full_client_configs.copy()
+            if full_config.get(SuperstreamKeys.CONNECTION):
+                full_config.pop(SuperstreamKeys.CONNECTION)
+            req = ClientConfigUpdateReq(client_hash=self.client_hash, config=full_config)
             await self._publish(SuperstreamSubjects.CLIENT_CONFIG_UPDATE, req.model_dump_json().encode())
         except Exception as e:
             await self.handle_error(f"{_name(self.send_client_config_update_req)} at publish {e!s}")
@@ -540,6 +543,7 @@ class Superstream:
                 if SuperstreamValues.START_KEY in message_data:
                     if message_data[SuperstreamValues.START_KEY]:
                         self.can_start = True
+                        self.optimized_config_received = True
                         if SuperstreamValues.OPTIMIZED_CONFIGURATION_KEY in message_data:
                             self.superstream_configs = message_data[SuperstreamValues.OPTIMIZED_CONFIGURATION_KEY]
                     else:

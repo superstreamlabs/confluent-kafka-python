@@ -6,12 +6,16 @@ from typing import Any, Dict, List, Optional
 from confluent_kafka.superstream.constants import SuperstreamKeys
 from confluent_kafka.superstream.core import Superstream
 from confluent_kafka.superstream.types import SuperstreamClientType
-from confluent_kafka.superstream.utils import proto_to_json
+from confluent_kafka.superstream.utils import KafkaUtil, proto_to_json
 
 
 class SuperstreamConsumerInterceptor:
     def __init__(self, config: Dict):
         self._superstream_config_ = Superstream.init_superstream_props(config, SuperstreamClientType.CONSUMER)
+
+    def set_full_configuration(self, config: Dict[str, Any]):
+        full_config = KafkaUtil.enrich_consumer_config(config)
+        self.superstream.set_full_client_configs(full_config)
 
     @property
     def superstream(self) -> Superstream:
