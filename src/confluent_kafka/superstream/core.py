@@ -188,7 +188,7 @@ class Superstream:
     async def wait_for_can_start(self):
         async def check_can_start():
             while not self.can_start:
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.2)
 
         try:
             await asyncio.wait_for(check_can_start(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START)
@@ -214,7 +214,7 @@ class Superstream:
             while not self.superstream_configs:
                 if datetime.now() > end_time:
                     raise Exception("client configuration was not set within the expected timeout period")
-                time.sleep(1)
+                time.sleep(0.2)
 
             for key, value in self.superstream_configs.items():
                 if self.client_type == SuperstreamClientType.PRODUCER.value:
@@ -231,7 +231,7 @@ class Superstream:
     async def wait_for_superstream_configs(self, update_cb: Callable | None = None):
         async def check_superstream_configs():
             while not self.superstream_configs:
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.2)
 
         timeout_ms = EnvVars.SUPERSTREAM_RESPONSE_TIMEOUT or SuperstreamValues.DEFAULT_SUPERSTREAM_TIMEOUT
         timeout = timeout_ms / 1000
@@ -550,7 +550,7 @@ class Superstream:
 
         async def is_started():
             while not self.can_start:
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.2)
 
         subscription = None
         try:
