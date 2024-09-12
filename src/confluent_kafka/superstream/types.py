@@ -258,3 +258,4 @@ class RegisterReq(BaseModel):
 class SuperstreamClientType(str, Enum):
     PRODUCER = "producer"
     CONSUMER = "consumer"
+    ADMIN = "admin"

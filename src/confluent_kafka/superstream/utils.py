@@ -1,6 +1,6 @@
 import base64
 import json
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from google.protobuf import descriptor_pb2, descriptor_pool, json_format
 from google.protobuf.message_factory import GetMessageClass
@@ -309,6 +309,14 @@ class KafkaUtil:
     @staticmethod
     def is_valid_consumer_key(key):
         return key in KafkaUtil.ConsumerConfigKeys or key in KafkaUtil.ProducerAndConsumerConfigKeys
+    
+    @staticmethod
+    def extract_kafka_config(config: Dict[str, Any]) -> Dict[str, Any]:
+        kafka_config = {}
+        for key in config:
+            if key in KafkaUtil.ProducerAndConsumerConfigKeys:
+                kafka_config[key] = config[key]
+        return kafka_config 
 
     @staticmethod
     def copy_auth_config(configs):

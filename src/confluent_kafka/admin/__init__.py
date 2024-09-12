@@ -15,71 +15,88 @@
 """
 Kafka admin client: create, view, alter, and delete topics and resources.
 """
-import warnings
 import concurrent.futures
+import warnings
+from typing import Tuple
 
-# Unused imports are keeped to be accessible using this public module
-from ._config import (ConfigSource,  # noqa: F401
-                      ConfigEntry,
-                      ConfigResource,
-                      AlterConfigOpType)
-from ._resource import (ResourceType,  # noqa: F401
-                        ResourcePatternType)
-from ._acl import (AclOperation,  # noqa: F401
-                   AclPermissionType,
-                   AclBinding,
-                   AclBindingFilter)
-from ._metadata import (BrokerMetadata,  # noqa: F401
-                        ClusterMetadata,
-                        GroupMember,
-                        GroupMetadata,
-                        PartitionMetadata,
-                        TopicMetadata)
-from ._group import (ConsumerGroupListing,  # noqa: F401
-                     ListConsumerGroupsResult,
-                     ConsumerGroupDescription,
-                     MemberAssignment,
-                     MemberDescription)
-from ._scram import (UserScramCredentialAlteration,  # noqa: F401
-                     UserScramCredentialUpsertion,
-                     UserScramCredentialDeletion,
-                     ScramCredentialInfo,
-                     ScramMechanism,
-                     UserScramCredentialsDescription)
-
-from ._topic import (TopicDescription)  # noqa: F401
-
-from ._cluster import (DescribeClusterResult)  # noqa: F401
-
-from ._listoffsets import (OffsetSpec,  # noqa: F401
-                           ListOffsetsResultInfo)
+from confluent_kafka import ConsumerGroupState as _ConsumerGroupState
+from confluent_kafka import (
+    ConsumerGroupTopicPartitions as _ConsumerGroupTopicPartitions,
+)
+from confluent_kafka import IsolationLevel as _IsolationLevel
+from confluent_kafka.superstream.constants import SuperstreamKeys
+from confluent_kafka.superstream.core import Superstream
+from confluent_kafka.superstream.types import SuperstreamClientType
+from confluent_kafka.superstream.utils import KafkaUtil
 
 from .._model import TopicCollection as _TopicCollection
+from ..cimpl import (
+    CONFIG_SOURCE_DEFAULT_CONFIG,
+    CONFIG_SOURCE_DYNAMIC_BROKER_CONFIG,
+    CONFIG_SOURCE_DYNAMIC_DEFAULT_BROKER_CONFIG,
+    CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG,
+    CONFIG_SOURCE_STATIC_BROKER_CONFIG,
+    CONFIG_SOURCE_UNKNOWN_CONFIG,
+    OFFSET_INVALID,
+    RESOURCE_ANY,
+    RESOURCE_BROKER,
+    RESOURCE_GROUP,
+    RESOURCE_TOPIC,
+    RESOURCE_UNKNOWN,
+    KafkaError,
+    KafkaException,  # noqa: F401
+    NewPartitions,
+    NewTopic,
+    _AdminClientImpl,
+)
+from ..cimpl import TopicPartition as _TopicPartition
+from ._acl import (
+    AclBinding,
+    AclBindingFilter,
+    AclOperation,  # noqa: F401
+    AclPermissionType,
+)
+from ._cluster import DescribeClusterResult  # noqa: F401
 
-from ..cimpl import (KafkaException,  # noqa: F401
-                     KafkaError,
-                     _AdminClientImpl,
-                     NewTopic,
-                     NewPartitions,
-                     TopicPartition as _TopicPartition,
-                     CONFIG_SOURCE_UNKNOWN_CONFIG,
-                     CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG,
-                     CONFIG_SOURCE_DYNAMIC_BROKER_CONFIG,
-                     CONFIG_SOURCE_DYNAMIC_DEFAULT_BROKER_CONFIG,
-                     CONFIG_SOURCE_STATIC_BROKER_CONFIG,
-                     CONFIG_SOURCE_DEFAULT_CONFIG,
-                     RESOURCE_UNKNOWN,
-                     RESOURCE_ANY,
-                     RESOURCE_TOPIC,
-                     RESOURCE_GROUP,
-                     RESOURCE_BROKER,
-                     OFFSET_INVALID)
-
-from confluent_kafka import \
-    ConsumerGroupTopicPartitions as _ConsumerGroupTopicPartitions, \
-    ConsumerGroupState as _ConsumerGroupState, \
-    IsolationLevel as _IsolationLevel
-
+# Unused imports are keeped to be accessible using this public module
+from ._config import (
+    AlterConfigOpType,
+    ConfigEntry,
+    ConfigResource,
+    ConfigSource,  # noqa: F401
+)
+from ._group import (
+    ConsumerGroupDescription,
+    ConsumerGroupListing,  # noqa: F401
+    ListConsumerGroupsResult,
+    MemberAssignment,
+    MemberDescription,
+)
+from ._listoffsets import (
+    ListOffsetsResultInfo,
+    OffsetSpec,  # noqa: F401
+)
+from ._metadata import (
+    BrokerMetadata,  # noqa: F401
+    ClusterMetadata,
+    GroupMember,
+    GroupMetadata,
+    PartitionMetadata,
+    TopicMetadata,
+)
+from ._resource import (
+    ResourcePatternType,
+    ResourceType,  # noqa: F401
+)
+from ._scram import (
+    ScramCredentialInfo,
+    ScramMechanism,
+    UserScramCredentialAlteration,  # noqa: F401
+    UserScramCredentialDeletion,
+    UserScramCredentialsDescription,
+    UserScramCredentialUpsertion,
+)
+from ._topic import TopicDescription  # noqa: F401
 
 try:
     string_type = basestring
@@ -119,7 +136,26 @@ class AdminClient (_AdminClientImpl):
 
         At least 'bootstrap.servers' should be configured.
         """
+        # ** Added by superstream
+        superstream_config, superstream_conn = AdminClient._configure_superstream(conf)
+        conf = KafkaUtil.extract_kafka_config(superstream_config)
+        # Added by superstream **
+        
         super(AdminClient, self).__init__(conf)
+
+        # ** Added by superstream
+        self._supersteam_config = superstream_config
+        self._superstream_conn = superstream_conn
+        # Added by superstream **
+
+    # ** Added by superstream
+    def _configure_superstream(conf) -> Tuple[dict, Superstream]:
+        superstream_config = Superstream.init_superstream_config(conf, SuperstreamClientType.ADMIN)
+        superstream: Superstream = superstream_config.get(SuperstreamKeys.CONNECTION)
+        superstream.set_full_client_configs(superstream_config)
+        config = superstream.wait_for_superstream_configs_sync(conf)
+        return config, superstream
+    # Added by superstream **
 
     @staticmethod
     def _make_topics_result(f, futmap):

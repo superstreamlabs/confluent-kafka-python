@@ -174,7 +174,7 @@ class Superstream:
         if not self.client_type:
             return
 
-        if self.client_type not in [SuperstreamClientType.PRODUCER.value, SuperstreamClientType.CONSUMER.value]:
+        if self.client_type not in [SuperstreamClientType.PRODUCER.value, SuperstreamClientType.CONSUMER.value, SuperstreamClientType.ADMIN.value]:
             return
 
         try:
@@ -188,7 +188,7 @@ class Superstream:
     async def wait_for_can_start(self):
         async def check_can_start():
             while not self.can_start:
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
 
         try:
             await asyncio.wait_for(check_can_start(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START)
@@ -208,7 +208,7 @@ class Superstream:
         config = config.copy() if config else {}
 
         timeout = EnvVars.SUPERSTREAM_RESPONSE_TIMEOUT or SuperstreamValues.DEFAULT_SUPERSTREAM_TIMEOUT
-        end_time = datetime.now() + timedelta(seconds=timeout)
+        end_time = datetime.now() + timedelta(milliseconds=timeout)
 
         try:
             while not self.superstream_configs:
@@ -233,7 +233,8 @@ class Superstream:
             while not self.superstream_configs:
                 await asyncio.sleep(1)
 
-        timeout = EnvVars.SUPERSTREAM_RESPONSE_TIMEOUT or SuperstreamValues.DEFAULT_SUPERSTREAM_TIMEOUT
+        timeout_ms = EnvVars.SUPERSTREAM_RESPONSE_TIMEOUT or SuperstreamValues.DEFAULT_SUPERSTREAM_TIMEOUT
+        timeout = timeout_ms / 1000
 
         try:
             await asyncio.wait_for(check_superstream_configs(), timeout=timeout)
@@ -290,6 +291,7 @@ class Superstream:
                             consumer_group_topics_partitions=self.topic_partitions
                             if self.client_type == SuperstreamClientType.CONSUMER.value
                             else {},
+                            connection_id=self.kafka_connection_id,
                         )
                     await self._publish(
                         SuperstreamSubjects.CLIENTS_UPDATE % ("config", self.client_hash),
@@ -307,12 +309,13 @@ class Superstream:
 
         async def start_periodic_task(interval, update_task):
             async def task_wrapper():
-                await update_task()
-                threading.Timer(interval, task_wrapper).start()
+                while True:
+                    await update_task()
+                    await asyncio.sleep(interval)
 
-            await task_wrapper()
+            asyncio.create_task(task_wrapper())
 
-        await start_periodic_task(60 * 10, client_update_task)
+        await start_periodic_task(10 * 60, client_update_task)
 
     def _compile_descriptor(
         self,
@@ -748,6 +751,8 @@ class Superstream:
 
         except Exception as e:
             SuperstreamStd().write(f"superstream: error initializing superstream: {e!s}")
+
+        return props
 
     def close(self):
         try:

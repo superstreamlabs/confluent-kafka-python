@@ -21,26 +21,29 @@ class SuperstreamProducerInterceptor:
     @property
     def superstream(self) -> Superstream:
         return self._superstream_config_.get(SuperstreamKeys.CONNECTION)
-
+    
     def produce(self, *args, **kwargs):
-        topic_index = 0
-        value_index = 1
-        partition_index = 3
+        topic_idx = 0
+        value_idx = 1
+        partition_idx = 3
+        on_delivery_idx = 4
         headers_index = 6
+
         superstream: Superstream = self._superstream_config_.get(SuperstreamKeys.CONNECTION)
         if not superstream:
             self._producer_handler(*args, **kwargs)
             return
 
-        topic = args[topic_index]
-        partition = args or 0 if len(args) > partition_index else kwargs.get("partition", 0)
-        superstream.update_topic_partitions(topic, partition)
+        topic = args[topic_idx]
+        if len(args) > partition_idx or "partition" in kwargs:
+            partition = args[partition_idx] if len(args) > partition_idx else kwargs.get("partition")
+            superstream.update_topic_partitions(topic, partition)
 
         if not superstream.superstream_ready:
             self._producer_handler(*args, **kwargs)
             return
 
-        msg = args[value_index] if len(args) > value_index else kwargs.get("value")
+        msg = args[value_idx] if len(args) > value_idx else kwargs.get("value")
         json_msg = _try_convert_to_json(msg)
         if json_msg is None:
             self._producer_handler(*args, **kwargs)
@@ -64,10 +67,29 @@ class SuperstreamProducerInterceptor:
                 elif isinstance(kwargs["headers"], list):
                     kwargs["headers"].extend(list(superstream_headers.items()))
 
-        if len(args) > value_index:
-            args = args[:value_index] + (serialized_msg,) + args[value_index + 1 :]
+        if len(args) > value_idx:
+            args = args[:value_idx] + (serialized_msg,) + args[value_idx + 1 :]
         elif "value" in kwargs:
             kwargs["value"] = serialized_msg
+
+        if len(args) > on_delivery_idx:
+            original_on_delivery_cb = args[on_delivery_idx]
+        if "on_delivery" in kwargs:
+            original_on_delivery_cb = kwargs["on_delivery"]
+
+        def updated_on_delivery_cb(err, msg):
+            if err:
+                original_on_delivery_cb(err, msg)
+            else:
+                topic = msg.topic()
+                partition = msg.partition()
+                superstream.update_topic_partitions(topic, partition)
+                original_on_delivery_cb(err, msg)
+
+        if len(args) > on_delivery_idx:
+            args = args[:on_delivery_idx] + (updated_on_delivery_cb,) + args[on_delivery_idx + 1 :]
+        elif "on_delivery" in kwargs:
+            kwargs["on_delivery"] = updated_on_delivery_cb
 
         self._producer_handler(*args, **kwargs)
 

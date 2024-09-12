@@ -10,7 +10,6 @@ class SuperstreamProducer(_ProducerImpl):
         self._interceptor = SuperstreamProducerInterceptor(config)
         config = self._interceptor.superstream.wait_for_superstream_configs_sync(config)
         super().__init__(config)
-
         self._interceptor.set_producer_handler(super().produce)
 
     def produce(self, *args, **kwargs):
