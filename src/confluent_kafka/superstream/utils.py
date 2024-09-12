@@ -544,6 +544,7 @@ class KafkaUtil:
             "sasl.username",
             "sasl.password",
             "sasl.mechanism",
+            "sasl.mechanisms",
             "ssl.ca.location",
         ]
 
