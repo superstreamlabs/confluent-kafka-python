@@ -160,7 +160,7 @@ class Superstream:
         await self.jetstream.publish(subject, payload)
 
     async def handle_error(self, msg: str):
-        if self.broker_connection is None or self.superstream_ready is False:
+        if self.broker_connection is None or not self.superstream_ready:
             return
         err_msg = f"[sdk: {SdkInfo.LANGUAGE}][version: {SdkInfo.VERSION}][tags: {self.tags}] {msg}"
         if self.client_hash is not None and self.client_hash != "":
@@ -493,9 +493,8 @@ class Superstream:
 
             try:
                 register_req_bytes = register_req.model_dump_json().encode()
-                resp = await self._request(
-                    SuperstreamSubjects.REGISTER_CLIENT, register_req_bytes, 60 * 5
-                )
+                sub = SuperstreamSubjects.REGISTER_CLIENT
+                resp = await self._request(sub, register_req_bytes, 60 * 5)
                 register_resp = RegisterResp.model_validate_json(resp.data)
             except Exception as e:
                 raise Exception("superstream: error registering client") from e
@@ -584,9 +583,10 @@ class Superstream:
                 await self._request(
                     SuperstreamSubjects.CLIENT_RECONNECTION_UPDATE, payload
                 )
-                self.subscribe_to_updates()
+                await self.subscribe_to_updates()
                 self.superstream_ready = True
-                self.report_clients_update()
+                await self.report_clients_update()
+                self.std.write("superstream: reconnected to superstream")
             except ErrGenerateConnectionId as e:
                 await self._handle_error(
                     f"{_name(self._init_nats_connection)} at {_name(self._generate_nats_connection_id)}: {e!s}"
@@ -600,7 +600,6 @@ class Superstream:
             self.nats_connection_id = local_connection_id
 
         async def disconnect_cb():
-            self.broker_connection = None
             self.jetstream = None
             self.nats_connection_id = ""
             self.superstream_ready = False
@@ -625,7 +624,8 @@ class Superstream:
         try:
             self.broker_connection = await nats.connect(
                 max_reconnect_attempts=NatsValues.INFINITE_RECONNECT_ATTEMPTS,
-                reconnect_time_wait=1.0,
+                reconnect_time_wait=1,  # in seconds
+                connect_timeout=10,  # in seconds
                 user=SuperstreamValues.INTERNAL_USERNAME,
                 password=token,
                 servers=host,
