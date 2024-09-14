@@ -755,7 +755,7 @@ class Superstream:
             )
 
         except Exception as e:
-            print(f"superstream: Could not subscribe to updates: {e}")
+            self.std.error(f"superstream: Could not subscribe to updates: {e}")
 
     def update_topic_partitions(self, topic: str, partition: int):
         self.topic_partitions[topic] = self.topic_partitions.get(topic, [])

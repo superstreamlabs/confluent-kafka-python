@@ -113,10 +113,6 @@ class SuperstreamProducerInterceptor:
 
         self._producer_handler(*args, **kwargs)
 
-    def update_stats(self, state: Dict[str, Any]):
-        print(state)
-        # raise NotImplementedError
-
     def _serialize(self, json_msg: str) -> Union[bytes, Dict[str, Any]]:
         superstream: Superstream = self._superstream_config_.get(
             SuperstreamKeys.CONNECTION
