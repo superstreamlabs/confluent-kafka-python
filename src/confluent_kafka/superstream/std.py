@@ -1,5 +1,6 @@
 import io
 import sys
+from typing import AnyStr
 
 from confluent_kafka.superstream.constants import EnvVars
 
@@ -29,20 +30,22 @@ class SuperstreamStd:
 
             self._initialized = True
 
-    def write(self, *args, **kwargs):
+    def write(self, msg:AnyStr, **kwargs):
         if self._is_stdout_disabled:
             return
-        self.stdout.write(*args, **kwargs)
+        msg = ''.join(map(str, msg)) + '\n'
+        self.stdout.write(msg, **kwargs)
 
     def writelines(self, *args, **kwargs):
         if self._is_stdout_disabled:
             return
         self.stdout.writelines(*args, **kwargs)
 
-    def error(self, *args, **kwargs):
+    def error(self, msg:AnyStr, **kwargs):
         if self._is_std_err_disabled:
             return
-        self.stderr.write(*args, **kwargs)
+        msg = ''.join(map(str, msg)) + '\n'
+        self.stderr.write(msg, **kwargs)
 
     def errorlines(self, *args, **kwargs):
         if self._is_std_err_disabled:

@@ -2,8 +2,8 @@ import os
 
 
 class SdkInfo:
-    VERSION = "3.5.113"
-    LANGUAGE = "java"
+    VERSION = "2.4.0"
+    LANGUAGE = "python"
 
 
 class NatsValues:
@@ -23,7 +23,7 @@ class SuperstreamKeys:
 
 class SuperstreamValues:
     MAX_TIME_WAIT_CAN_START = 60 * 10
-    DEFAULT_SUPERSTREAM_TIMEOUT = 3
+    DEFAULT_SUPERSTREAM_TIMEOUT = 3000
     OPTIMIZED_CONFIGURATION_KEY = "optimized_configuration"
     INTERNAL_USERNAME = "superstream_internal"
 

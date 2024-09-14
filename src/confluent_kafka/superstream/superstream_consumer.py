@@ -9,6 +9,7 @@ class SuperstreamConsumer(_ConsumerImpl):
     def __init__(self, config: Dict):
         self._interceptor = SuperstreamConsumerInterceptor(config)
         config = self._interceptor.superstream.wait_for_superstream_configs_sync(config)
+        self._interceptor.set_full_configuration(config)
         super().__init__(config)
 
     def poll(self, *args, **kwargs) -> Any:
