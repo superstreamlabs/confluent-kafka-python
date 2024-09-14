@@ -23,7 +23,7 @@ class SuperstreamStd:
             self._initialized = True
 
     def write(self, s: AnyStr, **kwargs):
-        if not isinstance(s, str):
+        if isinstance(s, str):
             s = f"{s}\n"
         self.stdout.write(s, **kwargs)
 
@@ -31,7 +31,7 @@ class SuperstreamStd:
         self.stdout.writelines(lines, **kwargs)
 
     def error(self, s: AnyStr, **kwargs):
-        if not isinstance(s, str):
+        if isinstance(s, str):
             s = f"{s}\n"
         self.stderr.write(s, **kwargs)
 

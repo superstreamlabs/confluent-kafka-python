@@ -679,8 +679,7 @@ class Superstream:
         subscription = None
         try:
             subscription = await self.broker_connection.subscribe(subject, cb=start_cb)
-            # await asyncio.wait_for(is_started(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START)
-            await asyncio.wait_for(is_started(), timeout=60)
+            await asyncio.wait_for(is_started(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START)
             if not self.can_start:
                 self.std.error(
                     "superstream: Could not connect to superstream for 10 minutes."

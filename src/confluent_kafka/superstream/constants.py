@@ -22,8 +22,8 @@ class SuperstreamKeys:
 
 
 class SuperstreamValues:
-    MAX_TIME_WAIT_CAN_START = 60 * 10
-    DEFAULT_SUPERSTREAM_TIMEOUT = 3000
+    MAX_TIME_WAIT_CAN_START = 60 * 10 # in seconds
+    DEFAULT_SUPERSTREAM_TIMEOUT = 3000 # in milliseconds
     OPTIMIZED_CONFIGURATION_KEY = "optimized_configuration"
     INTERNAL_USERNAME = "superstream_internal"
 
