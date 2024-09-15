@@ -63,7 +63,6 @@ class Superstream:
     reduction__enabled: bool
     client_type: str
     tags: str
-    compression_enabled: bool
     compression_type: str = "zstd"
     client_counters: SuperstreamCounters
     topic_partitions: Dict[str, List[int]]
@@ -90,8 +89,6 @@ class Superstream:
     superstream_configs: Dict[str, Any]
     kafka_connection_id: int
 
-    compression_turned_off_by_superstream: bool = False
-
     def __init__(
         self,
         token: str,
@@ -101,13 +98,11 @@ class Superstream:
         enable_reduction: bool,
         client_type: str,
         tags: str = "",
-        enable_compression: bool = False,
     ):
         self.learning_factor = learning_factor
         self.token = token
         self.host = host
         self.reduction_enabled = enable_reduction
-        self.compression_enabled = enable_compression
         self.client_type = client_type
         self.configs = configs
         self.tags = tags
@@ -679,7 +674,9 @@ class Superstream:
         subscription = None
         try:
             subscription = await self.broker_connection.subscribe(subject, cb=start_cb)
-            await asyncio.wait_for(is_started(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START)
+            await asyncio.wait_for(
+                is_started(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START
+            )
             if not self.can_start:
                 self.std.error(
                     "superstream: Could not connect to superstream for 10 minutes."
@@ -714,13 +711,7 @@ class Superstream:
             self.reduction_enabled = reduction_update.enable_reduction
 
         def compression_update_handler(payload: bytes):
-            if EnvVars.is_compression_disabled():
-                self.compression_enabled = False
-                return
-
             compression_update = CompressionUpdate.model_validate_json(payload)
-            self.compression_enabled = compression_update.enable_compression
-            self.compression_turned_off_by_superstream = not self.compression_enabled
             if compression_update.compression_type:
                 self.compression_type = compression_update.compression_type
 
@@ -857,7 +848,6 @@ class Superstream:
                 enable_reduction=EnvVars.SUPERSTREAM_REDUCTION_ENABLED,
                 client_type=client_type.value,
                 tags=EnvVars.SUPERSTREAM_TAGS,
-                enable_compression=EnvVars.SUPERSTREAM_COMPRESSION_ENABLED,
             )
 
             def run_event_loop(loop):
