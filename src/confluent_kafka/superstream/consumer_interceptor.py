@@ -45,8 +45,7 @@ class SuperstreamConsumerInterceptor:
         self.__update_topic_partitions(message)
         try:
             return asyncio.run(self.__deserialize(message))
-        except Exception as e:
-            print(f"error deserializing message: {e!s}")
+        except Exception:
             return message
 
     async def __deserialize(self, message: Any) -> Any:
@@ -90,7 +89,6 @@ class SuperstreamConsumerInterceptor:
             descriptor = superstream.consumer_proto_desc_map.get(schema_id)
             if not descriptor:
                 await superstream.handle_error(f"error getting schema with id: {schema_id}")
-                print("superstream: shcema not found")
                 return message
 
         try:

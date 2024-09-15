@@ -679,8 +679,7 @@ class Superstream:
         subscription = None
         try:
             subscription = await self.broker_connection.subscribe(subject, cb=start_cb)
-            # await asyncio.wait_for(is_started(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START)
-            await asyncio.wait_for(is_started(), timeout=60)
+            await asyncio.wait_for(is_started(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START)
             if not self.can_start:
                 self.std.error(
                     "superstream: Could not connect to superstream for 10 minutes."
@@ -755,7 +754,7 @@ class Superstream:
             )
 
         except Exception as e:
-            print(f"superstream: Could not subscribe to updates: {e}")
+            self.std.error(f"superstream: Could not subscribe to updates: {e}")
 
     def update_topic_partitions(self, topic: str, partition: int):
         self.topic_partitions[topic] = self.topic_partitions.get(topic, [])
