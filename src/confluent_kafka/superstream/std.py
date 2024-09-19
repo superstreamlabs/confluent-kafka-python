@@ -1,5 +1,6 @@
 import io
 import sys
+from typing import AnyStr, List
 
 from confluent_kafka.superstream.constants import EnvVars
 
@@ -12,56 +13,37 @@ class SuperstreamStd:
             cls._instance = super(SuperstreamStd, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, disable_stdout: bool = False, disable_stderr: bool = False):
+    def __init__(self):
         if not hasattr(self, "_initialized"):
-            disable_stdout, disable_stderr = SuperstreamStd.check_stdout_env_var()
-            self._is_stdout_disabled = disable_stdout
-            self._is_std_err_disabled = disable_stderr
+            enable_stdout, enable_stderr = SuperstreamStd.check_stdout_env_var()
 
-            self.stdout = sys.stdout
-            self.stderr = sys.stderr
-
-            self.superstream_stdout = io.StringIO()
-            self.superstream_stderr = io.StringIO()
-
-            # sys.stdout = self.superstream_stdout
-            # sys.stderr = self.superstream_stderr
+            self.stdout = sys.stdout if enable_stdout else io.StringIO()
+            self.stderr = sys.stderr if enable_stderr else io.StringIO()
 
             self._initialized = True
 
-    def write(self, *args, **kwargs):
-        if self._is_stdout_disabled:
-            return
-        self.stdout.write(*args, **kwargs)
+    def write(self, s: AnyStr, **kwargs):
+        if isinstance(s, str):
+            s = f"{s}\n"
+        self.stdout.write(s, **kwargs)
 
-    def writelines(self, *args, **kwargs):
-        if self._is_stdout_disabled:
-            return
-        self.stdout.writelines(*args, **kwargs)
+    def writelines(self, lines: List[AnyStr], **kwargs):
+        self.stdout.writelines(lines, **kwargs)
 
-    def error(self, *args, **kwargs):
-        if self._is_std_err_disabled:
-            return
-        self.stderr.write(*args, **kwargs)
+    def error(self, s: AnyStr, **kwargs):
+        if isinstance(s, str):
+            s = f"{s}\n"
+        self.stderr.write(s, **kwargs)
 
     def errorlines(self, *args, **kwargs):
-        if self._is_std_err_disabled:
-            return
         self.stderr.writelines(*args, **kwargs)
-
-    def flush(self):
-        self.stdout.flush()
-        self.stderr.flush()
-
-        sys.stdout = self.original_stdout
-        sys.stderr = self.original_stderr
 
     @staticmethod
     def check_stdout_env_var():
         if EnvVars.SUPERSTREAM_DEBUG:
-            is_stdout_disabled = True
-            is_std_err_disabled = True
+            enable_stdout = True
+            enable_stderr = True
         else:
-            is_stdout_disabled = False
-            is_std_err_disabled = False
-        return is_stdout_disabled, is_std_err_disabled
+            enable_stdout = False
+            enable_stderr = False
+        return enable_stdout, enable_stderr

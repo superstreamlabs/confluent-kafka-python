@@ -2,8 +2,8 @@ import os
 
 
 class SdkInfo:
-    VERSION = "3.5.113"
-    LANGUAGE = "java"
+    VERSION = "2.4.0"
+    LANGUAGE = "python"
 
 
 class NatsValues:
@@ -22,8 +22,8 @@ class SuperstreamKeys:
 
 
 class SuperstreamValues:
-    MAX_TIME_WAIT_CAN_START = 60 * 10
-    DEFAULT_SUPERSTREAM_TIMEOUT = 3
+    MAX_TIME_WAIT_CAN_START = 60 * 10 # in seconds
+    DEFAULT_SUPERSTREAM_TIMEOUT = 3000 # in milliseconds
     OPTIMIZED_CONFIGURATION_KEY = "optimized_configuration"
     INTERNAL_USERNAME = "superstream_internal"
 
@@ -53,12 +53,6 @@ class EnvVars:
     SUPERSTREAM_DEBUG: bool = os.getenv("SUPERSTREAM_DEBUG", "False").lower() in ("true")
     SUPERSTREAM_RESPONSE_TIMEOUT: float = float(os.getenv("SUPERSTREAM_RESPONSE_TIMEOUT", 3))
     SUPERSTREAM_REDUCTION_ENABLED: bool = os.getenv("SUPERSTREAM_REDUCTION_ENABLED", "") == "true"
-    SUPERSTREAM_COMPRESSION_ENABLED: bool = os.getenv("SUPERSTREAM_COMPRESSION_ENABLED", "") == "true"
-
-    @staticmethod
-    def is_compression_disabled():
-        actual = os.getenv("SUPERSTREAM_COMPRESSION_ENABLED", "")
-        return actual == "false"
 
 
 class KafkaProducerConfigKeys:

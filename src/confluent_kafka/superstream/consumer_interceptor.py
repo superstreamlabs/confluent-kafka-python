@@ -6,12 +6,16 @@ from typing import Any, Dict, List, Optional
 from confluent_kafka.superstream.constants import SuperstreamKeys
 from confluent_kafka.superstream.core import Superstream
 from confluent_kafka.superstream.types import SuperstreamClientType
-from confluent_kafka.superstream.utils import proto_to_json
+from confluent_kafka.superstream.utils import KafkaUtil, proto_to_json
 
 
 class SuperstreamConsumerInterceptor:
     def __init__(self, config: Dict):
         self._superstream_config_ = Superstream.init_superstream_props(config, SuperstreamClientType.CONSUMER)
+
+    def set_full_configuration(self, config: Dict[str, Any]):
+        full_config = KafkaUtil.enrich_consumer_config(config)
+        self.superstream.set_full_client_configs(full_config)
 
     @property
     def superstream(self) -> Superstream:
@@ -41,8 +45,7 @@ class SuperstreamConsumerInterceptor:
         self.__update_topic_partitions(message)
         try:
             return asyncio.run(self.__deserialize(message))
-        except Exception as e:
-            print(f"error deserializing message: {e!s}")
+        except Exception:
             return message
 
     async def __deserialize(self, message: Any) -> Any:
@@ -86,7 +89,6 @@ class SuperstreamConsumerInterceptor:
             descriptor = superstream.consumer_proto_desc_map.get(schema_id)
             if not descriptor:
                 await superstream.handle_error(f"error getting schema with id: {schema_id}")
-                print("superstream: shcema not found")
                 return message
 
         try:
