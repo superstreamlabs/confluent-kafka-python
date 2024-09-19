@@ -60,7 +60,6 @@ class Superstream:
     token: str
     host: str
     configs: Dict[str, Any]
-    reduction__enabled: bool
     client_type: str
     tags: str
     compression_type: str = "zstd"
