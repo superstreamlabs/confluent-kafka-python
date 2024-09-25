@@ -27,7 +27,7 @@ options:
 The `src`, `prefix`, and `output` are required arguments. The `version` argument is optional. An example command is shown below:
 
 ```sh
-python3 patch.py --src "/input/path/to/wheel/created/using/pdm" --output "/output/path/to/patched/pkgs" --prefix "superstream-confluent-kafka-beta-2.4.1"
+python3 patch.py --src "/input/path/to/wheel/created/using/pdm" --output "/output/path/to/patched/pkgs" --prefix "superstream-confluent-kafka-beta-2.4.0.1"
 ```
 
-**The value of `--prefix` should be the same as the name of the package that will be patched followed by the version number.** For example, if the package name is `superstream-confluent-kafka` and the version is `2.4.1`, the value of `--prefix` should be `superstream-confluent-kafka-beta-2.4.1`.
+**The value of `--prefix` should be the same as the name of the package that will be patched followed by the version number.** For example, if the package name is `superstream-confluent-kafka` and the version is `2.4.0.1`, the value of `--prefix` should be `superstream-confluent-kafka-beta-2.4.0.1`.
