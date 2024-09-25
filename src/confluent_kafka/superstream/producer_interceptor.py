@@ -24,7 +24,13 @@ class SuperstreamProducerInterceptor:
 
     def set_full_configuration(self, config: Dict[str, Any]):
         full_config = KafkaUtil.enrich_producer_config(config)
-        self.superstream.set_full_client_configs(full_config)
+        if self.superstream:
+            self.superstream.set_full_client_configs(full_config)
+
+    def wait_for_superstream_configs_sync(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        if self.superstream:
+            return self.superstream.wait_for_superstream_configs_sync(config)
+        return config
 
     @property
     def superstream(self) -> Superstream:

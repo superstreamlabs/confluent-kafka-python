@@ -22,8 +22,8 @@ class SuperstreamKeys:
 
 
 class SuperstreamValues:
-    MAX_TIME_WAIT_CAN_START = 60 * 10 # in seconds
-    DEFAULT_SUPERSTREAM_TIMEOUT = 3000 # in milliseconds
+    MAX_TIME_WAIT_CAN_START = 60 * 10  # in seconds
+    DEFAULT_SUPERSTREAM_TIMEOUT = 3000  # in milliseconds
     OPTIMIZED_CONFIGURATION_KEY = "optimized_configuration"
     INTERNAL_USERNAME = "superstream_internal"
 
@@ -45,14 +45,38 @@ class SuperstreamSubjects:
     START_CLIENT = "internal.startClient.%s"
 
 
-class EnvVars:
-    SUPERSTREAM_HOST = os.getenv("SUPERSTREAM_HOST")
-    SUPERSTREAM_TOKEN = os.getenv("SUPERSTREAM_TOKEN", "no-auth")
-    SUPERSTREAM_LEARNING_FACTOR: int = int(os.getenv("SUPERSTREAM_LEARNING_FACTOR", 20))
-    SUPERSTREAM_TAGS: str = os.getenv("SUPERSTREAM_TAGS", "")
-    SUPERSTREAM_DEBUG: bool = os.getenv("SUPERSTREAM_DEBUG", "False").lower() in ("true")
-    SUPERSTREAM_RESPONSE_TIMEOUT: float = float(os.getenv("SUPERSTREAM_RESPONSE_TIMEOUT", 3))
-    SUPERSTREAM_REDUCTION_ENABLED: bool = os.getenv("SUPERSTREAM_REDUCTION_ENABLED", "") == "true"
+class EnvVarsMeta(type):
+    @property
+    def SUPERSTREAM_HOST(cls) -> str:
+        return os.getenv("SUPERSTREAM_HOST")
+
+    @property
+    def SUPERSTREAM_TOKEN(cls) -> str:
+        return os.getenv("SUPERSTREAM_TOKEN", "no-auth")
+
+    @property
+    def SUPERSTREAM_LEARNING_FACTOR(cls) -> int:
+        return int(os.getenv("SUPERSTREAM_LEARNING_FACTOR", 20))
+
+    @property
+    def SUPERSTREAM_TAGS(cls) -> str:
+        return os.getenv("SUPERSTREAM_TAGS", "")
+
+    @property
+    def SUPERSTREAM_DEBUG(cls) -> bool:
+        return os.getenv("SUPERSTREAM_DEBUG", "False").lower() in ("true")
+
+    @property
+    def SUPERSTREAM_RESPONSE_TIMEOUT(cls) -> float:
+        return float(os.getenv("SUPERSTREAM_RESPONSE_TIMEOUT", SuperstreamValues.DEFAULT_SUPERSTREAM_TIMEOUT))
+
+    @property
+    def SUPERSTREAM_REDUCTION_ENABLED(cls) -> bool:
+        return os.getenv("SUPERSTREAM_REDUCTION_ENABLED", "") == "true"
+
+
+class EnvVars(metaclass=EnvVarsMeta):
+    pass
 
 
 class KafkaProducerConfigKeys:

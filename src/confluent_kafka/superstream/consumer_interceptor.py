@@ -15,19 +15,24 @@ class SuperstreamConsumerInterceptor:
 
     def set_full_configuration(self, config: Dict[str, Any]):
         full_config = KafkaUtil.enrich_consumer_config(config)
-        self.superstream.set_full_client_configs(full_config)
+        if self.superstream:
+            self.superstream.set_full_client_configs(full_config)
 
     @property
     def superstream(self) -> Superstream:
         return self._superstream_config_.get(SuperstreamKeys.CONNECTION)
+    
+    def wait_for_superstream_configs_sync(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        if self.superstream:
+            return self.superstream.wait_for_superstream_configs_sync(config)
+        return config
 
     def __update_topic_partitions(self, message):
-        superstream: Superstream = self._superstream_config_.get(SuperstreamKeys.CONNECTION)
-        if superstream is None:
+        if self.superstream is None:
             return
         topic = message.topic()
         partition = message.partition()
-        superstream.update_topic_partitions(topic, partition)
+        self.superstream.update_topic_partitions(topic, partition)
 
     def poll(self, message) -> Any:
         if message is None:
@@ -49,7 +54,6 @@ class SuperstreamConsumerInterceptor:
             return message
 
     async def __deserialize(self, message: Any) -> Any:
-        superstream: Superstream = self._superstream_config_.get(SuperstreamKeys.CONNECTION)
         message_value = message.value()
         headers = message.headers()
 
@@ -73,22 +77,22 @@ class SuperstreamConsumerInterceptor:
         check_interval = 5
 
         for _ in range(0, wait_time, check_interval):
-            if superstream.superstream_ready:
+            if self.superstream and self.superstream.superstream_ready:
                 break
             time.sleep(check_interval)
 
-        if not superstream.superstream_ready:
+        if not self.superstream or not self.superstream.superstream_ready:
             sys.stderr.write(
                 "superstream: cannot connect with superstream and consume message that was modified by superstream"
             )
             return message
 
-        descriptor = superstream.consumer_proto_desc_map.get(schema_id)
+        descriptor = self.superstream.consumer_proto_desc_map.get(schema_id)
         if not descriptor:
-            await superstream.send_get_schema_request(schema_id)
-            descriptor = superstream.consumer_proto_desc_map.get(schema_id)
+            await self.superstream.send_get_schema_request(schema_id)
+            descriptor = self.superstream.consumer_proto_desc_map.get(schema_id)
             if not descriptor:
-                await superstream.handle_error(f"error getting schema with id: {schema_id}")
+                await self.superstream.handle_error(f"error getting schema with id: {schema_id}")
                 return message
 
         try:
@@ -98,5 +102,5 @@ class SuperstreamConsumerInterceptor:
             message.set_value(deserialized_msg.encode("utf-8"))
             return message
         except Exception as e:
-            await superstream.handle_error(f"error deserializing data: {e!s}")
+            await self.superstream.handle_error(f"error deserializing data: {e!s}")
             return message
