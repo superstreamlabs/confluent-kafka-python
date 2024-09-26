@@ -715,17 +715,31 @@ class Superstream:
             self.reduction_enabled = reduction_update.enable_reduction
 
         def compression_update_handler(payload: bytes):
-            compression_update = CompressionUpdate.model_validate_json(payload)
-            if compression_update.compression_type:
-                self.compression_type = compression_update.compression_type
-                
-                new_config = KafkaUtil.extract_producer_config(self.configs)
-                compression_config = KafkaUtil.get_compression_config(
-                    self.compression_type, new_config
+            try:
+                compression_update = CompressionUpdate.model_validate_json(payload)
+                if compression_update.compression_type:
+                    if not KafkaUtil.is_valid_compression_type(
+                        compression_update.compression_type
+                    ):
+                        raise Exception(
+                            f"invalid compression type: {compression_update.compression_type}"
+                        )
+
+                    self.compression_type = compression_update.compression_type
+                    new_config = KafkaUtil.extract_producer_config(self.configs)
+                    compression_config = KafkaUtil.get_compression_config(
+                        self.compression_type, new_config
+                    )
+                    new_config.update(compression_config)
+                    if self._config_update_cb:
+                        self.std.write(
+                            f"superstream: updating producer config with compression type: {self.compression_type}"
+                        )
+                        self._config_update_cb(new_config)
+            except Exception as e:
+                self.std.error(
+                    f"superstream: error processing compression update: {e!s}"
                 )
-                new_config.update(compression_config)
-                if self._config_update_cb:
-                    self._config_update_cb(new_config)
 
         handlers = {
             LEARNED_SCHEMA: learned_schema_handler,

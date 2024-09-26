@@ -482,6 +482,10 @@ class KafkaUtil:
     }
 
     @staticmethod
+    def is_valid_compression_type(compression_type):
+        return compression_type in ["none", "gzip", "snappy", "lz4", "zstd"]
+
+    @staticmethod
     def extract_producer_config(config: Dict[str, Any]) -> Dict[str, Any]:
         producer_config = {}
         producer_keys = (

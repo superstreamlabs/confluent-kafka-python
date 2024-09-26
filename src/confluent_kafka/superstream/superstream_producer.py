@@ -16,12 +16,13 @@ class SuperstreamProducer:
         config = self._interceptor.wait_for_superstream_configs_sync(config)
         self._interceptor.set_full_configuration(config)
         self._p = _ProducerImpl(config)
-        # super().__init__(config)
         self._interceptor.set_producer_handler(self._p.produce)
         self._interceptor.set_config_update_cb(self._update_config)
         self._config = config
         self._loop = asyncio.get_event_loop()
 
+    def __len__(self):
+        return len(self._p)
 
     def produce(self, *args, **kwargs):
         if self._lock.locked():
