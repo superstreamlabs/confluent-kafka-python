@@ -137,7 +137,7 @@ class KafkaUtil:
         "topic.metadata.refresh.sparse",
         "topic.metadata.propagation.max.ms",
         "topic.blacklist",
-        "debug",
+        # "debug",
         "socket.timeout.ms",
         "socket.blocking.max.ms",
         "socket.send.buffer.bytes" "socket.receive.buffer.bytes",
@@ -254,8 +254,6 @@ class KafkaUtil:
         "compression.type",
         "compression.level",
         "queue.buffering.backpressure.threshold",
-        "compression.codec",
-        "compression.type",
         "batch.num.messages",
         "batch.size",
         "delivery.report.only.error",
@@ -321,7 +319,7 @@ class KafkaUtil:
         "topic.metadata.refresh.sparse": True,
         "topic.metadata.propagation.max.ms": 30000,
         "topic.blacklist": "",
-        "debug": "",
+        # "debug": "",
         "socket.timeout.ms": 60000,
         "socket.blocking.max.ms": 1000,
         "socket.send.buffer.bytes": 0,
@@ -484,6 +482,29 @@ class KafkaUtil:
     }
 
     @staticmethod
+    def extract_producer_config(config: Dict[str, Any]) -> Dict[str, Any]:
+        producer_config = {}
+        producer_keys = KafkaUtil.ProducerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        for key in config:
+            if key in producer_keys:
+                producer_config[key] = config[key]
+        return producer_config
+
+    @staticmethod
+    def get_compression_config(compression_type, full_config: dict = None) -> dict:
+        compression_config =  {
+            "compression.type": compression_type,
+            "linger.ms": 1000,
+        }
+
+        if full_config:
+            linger = full_config.get("linger.ms", 0)
+            if linger > 1000:
+                compression_config["linger.ms"] = linger
+
+        return compression_config
+
+    @staticmethod
     def is_valid_producer_key(key):
         return (
             key in KafkaUtil.ProducerConfigKeys
@@ -508,7 +529,9 @@ class KafkaUtil:
     @staticmethod
     def enrich_producer_config(config: Dict[str, Any]) -> Dict[str, Any]:
         enriched_config = config.copy() if config else {}
-        producer_keys = KafkaUtil.ProducerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        producer_keys = (
+            KafkaUtil.ProducerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        )
         for key in producer_keys:
             if key in enriched_config:
                 continue
@@ -520,7 +543,9 @@ class KafkaUtil:
     @staticmethod
     def enrich_consumer_config(config: Dict[str, Any]) -> Dict[str, Any]:
         enriched_config = config.copy() if config else {}
-        consumer_keys = KafkaUtil.ConsumerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        consumer_keys = (
+            KafkaUtil.ConsumerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        )
         for key in consumer_keys:
             if key in enriched_config:
                 continue
