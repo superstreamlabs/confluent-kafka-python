@@ -13,11 +13,14 @@ from confluent_kafka.superstream.utils import (
 
 class SuperstreamProducerInterceptor:
     def __init__(self, config: Dict, producer_handler: Callable | None = None):
-        self._compression_type = "zstd"
         self._superstream_config_ = Superstream.init_superstream_props(
             config, SuperstreamClientType.PRODUCER
         )
         self._producer_handler = producer_handler
+
+    def set_config_update_cb(self, config_update_cb: Callable):
+        if self.superstream:
+            self.superstream.set_config_update_cb(config_update_cb)
 
     def set_producer_handler(self, producer_handler: Callable):
         self._producer_handler = producer_handler

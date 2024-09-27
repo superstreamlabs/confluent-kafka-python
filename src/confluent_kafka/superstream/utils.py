@@ -254,8 +254,6 @@ class KafkaUtil:
         "compression.type",
         "compression.level",
         "queue.buffering.backpressure.threshold",
-        "compression.codec",
-        "compression.type",
         "batch.num.messages",
         "batch.size",
         "delivery.report.only.error",
@@ -484,6 +482,28 @@ class KafkaUtil:
     }
 
     @staticmethod
+    def is_valid_compression_type(compression_type):
+        return compression_type in ["none", "gzip", "snappy", "lz4", "zstd"]
+
+    @staticmethod
+    def extract_producer_config(config: Dict[str, Any]) -> Dict[str, Any]:
+        producer_config = {}
+        producer_keys = (
+            KafkaUtil.ProducerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        )
+        for key in config:
+            if key in producer_keys:
+                producer_config[key] = config[key]
+        return producer_config
+
+    @staticmethod
+    def get_compression_config(compression_type, full_config: dict = None) -> dict:
+        compression_config = {
+            "compression.type": compression_type,
+        }
+        return compression_config
+
+    @staticmethod
     def is_valid_producer_key(key):
         return (
             key in KafkaUtil.ProducerConfigKeys
@@ -508,7 +528,9 @@ class KafkaUtil:
     @staticmethod
     def enrich_producer_config(config: Dict[str, Any]) -> Dict[str, Any]:
         enriched_config = config.copy() if config else {}
-        producer_keys = KafkaUtil.ProducerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        producer_keys = (
+            KafkaUtil.ProducerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        )
         for key in producer_keys:
             if key in enriched_config:
                 continue
@@ -520,7 +542,9 @@ class KafkaUtil:
     @staticmethod
     def enrich_consumer_config(config: Dict[str, Any]) -> Dict[str, Any]:
         enriched_config = config.copy() if config else {}
-        consumer_keys = KafkaUtil.ConsumerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        consumer_keys = (
+            KafkaUtil.ConsumerConfigKeys + KafkaUtil.ProducerAndConsumerConfigKeys
+        )
         for key in consumer_keys:
             if key in enriched_config:
                 continue
