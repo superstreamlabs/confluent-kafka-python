@@ -60,10 +60,8 @@ class Superstream:
     token: str
     host: str
     configs: Dict[str, Any]
-    reduction__enabled: bool
     client_type: str
     tags: str
-    compression_enabled: bool
     compression_type: str = "zstd"
     client_counters: SuperstreamCounters
     topic_partitions: Dict[str, List[int]]
@@ -90,8 +88,6 @@ class Superstream:
     superstream_configs: Dict[str, Any]
     kafka_connection_id: int
 
-    compression_turned_off_by_superstream: bool = False
-
     def __init__(
         self,
         token: str,
@@ -101,13 +97,11 @@ class Superstream:
         enable_reduction: bool,
         client_type: str,
         tags: str = "",
-        enable_compression: bool = False,
     ):
         self.learning_factor = learning_factor
         self.token = token
         self.host = host
         self.reduction_enabled = enable_reduction
-        self.compression_enabled = enable_compression
         self.client_type = client_type
         self.configs = configs
         self.tags = tags
@@ -124,19 +118,33 @@ class Superstream:
 
         self.client_hash = None
         self.superstream_configs = {}
+        self.optimized_config_received = False
+        self._initial_topic_partition_update_sent = False
 
-    async def _request(self, subject: str, payload: bytes, timeout: float = 30, timeout_retries: int = 1):
+        self._config_update_cb = None
+
+    async def _request(
+        self,
+        subject: str,
+        payload: bytes,
+        timeout: float = 30,
+        timeout_retries: int = 1,
+    ):
         """
         Send a request to the broker and wait for the response.
         :param timeout: Time to wait for the response. Default is 30 seconds.
         """
         try:
-            res = await self.broker_connection.request(subject, payload, timeout=timeout)
+            res = await self.broker_connection.request(
+                subject, payload, timeout=timeout
+            )
             return res
         except Exception as e:
             if "timeout" not in str(e).lower() or timeout_retries <= 0:
                 raise e
-            return await self._request(subject, payload, timeout=timeout, timeout_retries=timeout_retries - 1)
+            return await self._request(
+                subject, payload, timeout=timeout, timeout_retries=timeout_retries - 1
+            )
 
     async def _send_client_errors_to_backend(self, err_msg: str):
         await self._publish(SuperstreamSubjects.CLIENT_ERRORS, err_msg.encode())
@@ -148,7 +156,7 @@ class Superstream:
         await self.jetstream.publish(subject, payload)
 
     async def handle_error(self, msg: str):
-        if self.broker_connection is None or self.superstream_ready is False:
+        if self.broker_connection is None or not self.superstream_ready:
             return
         err_msg = f"[sdk: {SdkInfo.LANGUAGE}][version: {SdkInfo.VERSION}][tags: {self.tags}] {msg}"
         if self.client_hash is not None and self.client_hash != "":
@@ -159,39 +167,57 @@ class Superstream:
         if self.learning_request_sent:
             return
         try:
-            await self._publish(SuperstreamSubjects.REGISTER_SCHEMA % self.client_hash, b"")
+            await self._publish(
+                SuperstreamSubjects.REGISTER_SCHEMA % self.client_hash, b""
+            )
             self.learning_request_sent = True
         except Exception as e:
-            await self.handle_error(f"{_name(self.send_register_schema_req)} at publish {e!s}")
+            await self.handle_error(
+                f"{_name(self.send_register_schema_req)} at publish {e!s}"
+            )
 
     async def send_learning_message(self, msg: bytes):
         try:
-            await self._publish(SuperstreamSubjects.LEARN_SCHEMA % self.client_hash, msg)
+            await self._publish(
+                SuperstreamSubjects.LEARN_SCHEMA % self.client_hash, msg
+            )
         except Exception as e:
-            await self.handle_error(f"{_name(self.send_learning_message)} at publish {e!s}")
+            await self.handle_error(
+                f"{_name(self.send_learning_message)} at publish {e!s}"
+            )
 
     async def send_client_type_update_req(self):
         if not self.client_type:
             return
 
-        if self.client_type not in [SuperstreamClientType.PRODUCER.value, SuperstreamClientType.CONSUMER.value]:
+        if self.client_type not in [
+            SuperstreamClientType.PRODUCER.value,
+            SuperstreamClientType.CONSUMER.value,
+            SuperstreamClientType.ADMIN.value,
+        ]:
             return
 
         try:
             await self._publish(
                 SuperstreamSubjects.CLIENT_TYPE_UPDATE,
-                ClientTypeUpdateReq(client_hash=self.client_hash, type=self.client_type).model_dump_json().encode(),
+                ClientTypeUpdateReq(client_hash=self.client_hash, type=self.client_type)
+                .model_dump_json()
+                .encode(),
             )
         except Exception as e:
-            await self.handle_error(f"{_name(self.send_client_type_update_req)} at publish {e!s}")
+            await self.handle_error(
+                f"{_name(self.send_client_type_update_req)} at publish {e!s}"
+            )
 
     async def wait_for_can_start(self):
         async def check_can_start():
             while not self.can_start:
-                asyncio.sleep(1)
+                await asyncio.sleep(0.2)
 
         try:
-            await asyncio.wait_for(check_can_start(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START)
+            await asyncio.wait_for(
+                check_can_start(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START
+            )
             if not self.can_start:
                 raise Exception("could not start within the expected timeout period")
         except Exception as e:
@@ -202,19 +228,26 @@ class Superstream:
             await self.wait_for_can_start()
             await self.send_client_config_update_req()
         except Exception as e:
-            self.std.error(f"superstream: error sending client config update request: {e!s}")
+            self.std.error(
+                f"superstream: error sending client config update request: {e!s}"
+            )
 
     def wait_for_superstream_configs_sync(self, config: Dict) -> Dict[str, Any]:
         config = config.copy() if config else {}
 
-        timeout = EnvVars.SUPERSTREAM_RESPONSE_TIMEOUT or SuperstreamValues.DEFAULT_SUPERSTREAM_TIMEOUT
-        end_time = datetime.now() + timedelta(seconds=timeout)
+        timeout = (
+            EnvVars.SUPERSTREAM_RESPONSE_TIMEOUT
+            or SuperstreamValues.DEFAULT_SUPERSTREAM_TIMEOUT
+        )
+        end_time = datetime.now() + timedelta(milliseconds=timeout)
 
         try:
-            while not self.superstream_configs:
+            while not self.optimized_config_received:
                 if datetime.now() > end_time:
-                    raise Exception("client configuration was not set within the expected timeout period")
-                time.sleep(1)
+                    raise Exception(
+                        "client configuration was not set within the expected timeout period"
+                    )
+                time.sleep(0.2)
 
             for key, value in self.superstream_configs.items():
                 if self.client_type == SuperstreamClientType.PRODUCER.value:
@@ -231,14 +264,20 @@ class Superstream:
     async def wait_for_superstream_configs(self, update_cb: Callable | None = None):
         async def check_superstream_configs():
             while not self.superstream_configs:
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.2)
 
-        timeout = EnvVars.SUPERSTREAM_RESPONSE_TIMEOUT or SuperstreamValues.DEFAULT_SUPERSTREAM_TIMEOUT
+        timeout_ms = (
+            EnvVars.SUPERSTREAM_RESPONSE_TIMEOUT
+            or SuperstreamValues.DEFAULT_SUPERSTREAM_TIMEOUT
+        )
+        timeout = timeout_ms / 1000
 
         try:
             await asyncio.wait_for(check_superstream_configs(), timeout=timeout)
             if not self.superstream_configs:
-                raise Exception("client configuration was not set within the expected timeout period")
+                raise Exception(
+                    "client configuration was not set within the expected timeout period"
+                )
 
             if update_cb is None:
                 return
@@ -255,11 +294,43 @@ class Superstream:
         except Exception as e:
             self.std.error(f"superstream {e}")
 
+    async def _send_initial_topic_partitions_update(self):
+        """
+        Update the client's topic partitions with the superstream.
+        This is used to update the client's topic partitions only once if there is no topic partition update sent by the client.
+        This makes it faster to get topic and partition information of a client from the superstream.
+        """
+        try:
+            topic_partition_payload = TopicsPartitionsPerProducerConsumer(
+                producer_topics_partitions={},
+                consumer_group_topics_partitions={},
+                connection_id=self.kafka_connection_id,
+            )
+            if self.topic_partitions:
+                topic_partition_payload = TopicsPartitionsPerProducerConsumer(
+                    producer_topics_partitions=self.topic_partitions
+                    if self.client_type == SuperstreamClientType.PRODUCER.value
+                    else {},
+                    consumer_group_topics_partitions=self.topic_partitions
+                    if self.client_type == SuperstreamClientType.CONSUMER.value
+                    else {},
+                    connection_id=self.kafka_connection_id,
+                )
+            await self._publish(
+                SuperstreamSubjects.CLIENTS_UPDATE % ("config", self.client_hash),
+                topic_partition_payload.model_dump_json().encode(),
+            )
+            self._initial_topic_partition_update_sent = True
+        except Exception as e:
+            await self.handle_error(f"{_name(self.report_clients_update)}: {e!s}")
+
     async def report_clients_update(self):
         async def client_update_task():
             async def update_client_counters():
                 backup_read_bytes = self.client_counters.get_total_read_bytes_reduced()
-                backup_write_bytes = self.client_counters.get_total_write_bytes_reduced()
+                backup_write_bytes = (
+                    self.client_counters.get_total_write_bytes_reduced()
+                )
                 self.client_counters.reset()
 
                 request = ClientCounterUpdateRequest.from_superstream_counters(
@@ -267,13 +338,20 @@ class Superstream:
                 )
                 try:
                     await self._publish(
-                        SuperstreamSubjects.CLIENTS_UPDATE % ("counters", self.client_hash),
+                        SuperstreamSubjects.CLIENTS_UPDATE
+                        % ("counters", self.client_hash),
                         request.model_dump_json().encode(),
                     )
                 except Exception as e:
-                    self.client_counters.increment_total_read_bytes_reduced(backup_read_bytes)
-                    self.client_counters.increment_total_write_bytes_reduced(backup_write_bytes)
-                    await self.handle_error(f"{_name(self.report_clients_update)} at publish {e!s}")
+                    self.client_counters.increment_total_read_bytes_reduced(
+                        backup_read_bytes
+                    )
+                    self.client_counters.increment_total_write_bytes_reduced(
+                        backup_write_bytes
+                    )
+                    await self.handle_error(
+                        f"{_name(self.report_clients_update)} at publish {e!s}"
+                    )
 
             async def update_client_topic_partitions():
                 try:
@@ -290,14 +368,18 @@ class Superstream:
                             consumer_group_topics_partitions=self.topic_partitions
                             if self.client_type == SuperstreamClientType.CONSUMER.value
                             else {},
+                            connection_id=self.kafka_connection_id,
                         )
                     await self._publish(
-                        SuperstreamSubjects.CLIENTS_UPDATE % ("config", self.client_hash),
+                        SuperstreamSubjects.CLIENTS_UPDATE
+                        % ("config", self.client_hash),
                         topic_partition_payload.model_dump_json().encode(),
                     )
 
                 except Exception as e:
-                    await self.handle_error(f"{_name(self.report_clients_update)}: {e!s}")
+                    await self.handle_error(
+                        f"{_name(self.report_clients_update)}: {e!s}"
+                    )
 
             if not self.broker_connection or not self.superstream_ready:
                 return
@@ -307,12 +389,13 @@ class Superstream:
 
         async def start_periodic_task(interval, update_task):
             async def task_wrapper():
-                await update_task()
-                threading.Timer(interval, task_wrapper).start()
+                while True:
+                    await update_task()
+                    await asyncio.sleep(interval)
 
-            await task_wrapper()
+            asyncio.create_task(task_wrapper())
 
-        await start_periodic_task(60 * 10, client_update_task)
+        await start_periodic_task(10 * 60, client_update_task)
 
     def _compile_descriptor(
         self,
@@ -323,31 +406,49 @@ class Superstream:
         try:
             return compile_descriptor(descriptor, msg_struct_name, file_name)
         except Exception as e:
-            self.std.write(f"{_name(self._compile_descriptor)} at compile_descriptor {e!s}")
+            self.std.write(
+                f"{_name(self._compile_descriptor)} at compile_descriptor {e!s}"
+            )
             raise e
 
     async def send_get_schema_request(self, schema_id: str):
         req_bytes = GetSchemaReq(schema_id=schema_id).model_dump_json().encode()
 
         try:
-            msg = await self._request(SuperstreamSubjects.GET_SCHEMA % self.client_hash, req_bytes, 30)
+            msg = await self._request(
+                SuperstreamSubjects.GET_SCHEMA % self.client_hash, req_bytes, 30
+            )
             resp = SchemaUpdateReq.model_validate_json(msg.data)
-            desc = self._compile_descriptor(resp.desc, resp.master_msg_name, resp.file_name)
+            desc = self._compile_descriptor(
+                resp.desc, resp.master_msg_name, resp.file_name
+            )
             if desc is not None:
                 self.consumer_proto_desc_map[resp.schema_id] = desc
             else:
-                await self.handle_error(f"{_name(self.send_get_schema_request)}: error compiling schema")
+                await self.handle_error(
+                    f"{_name(self.send_get_schema_request)}: error compiling schema"
+                )
                 raise Exception("superstream: error compiling schema")
         except Exception as e:
-            await self.handle_error(f"{_name(self.send_get_schema_request)} at request {e!s}")
+            await self.handle_error(
+                f"{_name(self.send_get_schema_request)} at request {e!s}"
+            )
 
     async def send_client_config_update_req(self):
         try:
-            # req = ClientConfigUpdateReq(client_hash=self.client_hash, config=self.full_client_configs)
-            req = ClientConfigUpdateReq(client_hash=self.client_hash, config=self.configs)
-            await self._publish(SuperstreamSubjects.CLIENT_CONFIG_UPDATE, req.model_dump_json().encode())
+            full_config = self.full_client_configs.copy()
+            if full_config.get(SuperstreamKeys.CONNECTION):
+                full_config.pop(SuperstreamKeys.CONNECTION)
+            req = ClientConfigUpdateReq(
+                client_hash=self.client_hash, config=full_config
+            )
+            await self._publish(
+                SuperstreamSubjects.CLIENT_CONFIG_UPDATE, req.model_dump_json().encode()
+            )
         except Exception as e:
-            await self.handle_error(f"{_name(self.send_client_config_update_req)} at publish {e!s}")
+            await self.handle_error(
+                f"{_name(self.send_client_config_update_req)} at publish {e!s}"
+            )
 
     async def register_client(self):
         def populate_config_to_send(configs):
@@ -388,7 +489,8 @@ class Superstream:
 
             try:
                 register_req_bytes = register_req.model_dump_json().encode()
-                resp = await self._request(SuperstreamSubjects.REGISTER_CLIENT, register_req_bytes, 60 * 5)
+                sub = SuperstreamSubjects.REGISTER_CLIENT
+                resp = await self._request(sub, register_req_bytes, 60 * 5)
                 register_resp = RegisterResp.model_validate_json(resp.data)
             except Exception as e:
                 raise Exception("superstream: error registering client") from e
@@ -425,10 +527,15 @@ class Superstream:
             partitions = c.list_topics().topics[topic].partitions
             if not partitions:
                 return "0"
-            topic_partitions = [SuperstreamFactory.create_topic_partition(topic, partition) for partition in partitions]
+            topic_partitions = [
+                SuperstreamFactory.create_topic_partition(topic, partition)
+                for partition in partitions
+            ]
             end_offsets = [c.get_watermark_offsets(tp) for tp in topic_partitions]
             topic_partitions = [
-                SuperstreamFactory.create_topic_partition(topic, p, offset=end_offset[1] - 1)
+                SuperstreamFactory.create_topic_partition(
+                    topic, p, offset=end_offset[1] - 1
+                )
                 for p, end_offset in zip(partitions, end_offsets)
             ]
 
@@ -463,27 +570,32 @@ class Superstream:
                 local_connection_id = self._generate_nats_connection_id()
                 payload = (
                     ClientReconnectionUpdateReq(
-                        new_nats_connection_id=local_connection_id, client_hash=self.client_hash
+                        new_nats_connection_id=local_connection_id,
+                        client_hash=self.client_hash,
                     )
                     .model_dump_json()
                     .encode()
                 )
-                await self._request(SuperstreamSubjects.CLIENT_RECONNECTION_UPDATE, payload)
-                self.subscribe_to_updates()
+                await self._request(
+                    SuperstreamSubjects.CLIENT_RECONNECTION_UPDATE, payload
+                )
+                await self.subscribe_to_updates()
                 self.superstream_ready = True
-                self.report_clients_update()
+                await self.report_clients_update()
+                self.std.write("superstream: reconnected to superstream")
             except ErrGenerateConnectionId as e:
                 await self._handle_error(
                     f"{_name(self._init_nats_connection)} at {_name(self._generate_nats_connection_id)}: {e!s}"
                 )
                 return
             except Exception as e:
-                await self._handle_error(f"{_name(self._init_nats_connection)} at broker connection request: {e!s}")
+                await self._handle_error(
+                    f"{_name(self._init_nats_connection)} at broker connection request: {e!s}"
+                )
                 return
             self.nats_connection_id = local_connection_id
 
         async def disconnect_cb():
-            self.broker_connection = None
             self.jetstream = None
             self.nats_connection_id = ""
             self.superstream_ready = False
@@ -508,7 +620,8 @@ class Superstream:
         try:
             self.broker_connection = await nats.connect(
                 max_reconnect_attempts=NatsValues.INFINITE_RECONNECT_ATTEMPTS,
-                reconnect_time_wait=1.0,
+                reconnect_time_wait=1,  # in seconds
+                connect_timeout=10,  # in seconds
                 user=SuperstreamValues.INTERNAL_USERNAME,
                 password=token,
                 servers=host,
@@ -524,9 +637,13 @@ class Superstream:
                     "Cannot connect with superstream since you have reached the maximum amount of connected clients"
                 ) from exception
             elif "invalid checksum" in str(exception):
-                raise Exception("Error connecting with superstream: unauthorized") from exception
+                raise Exception(
+                    "Error connecting with superstream: unauthorized"
+                ) from exception
             else:
-                raise Exception(f"Error connecting with superstream: {exception!s}") from exception
+                raise Exception(
+                    f"Error connecting with superstream: {exception!s}"
+                ) from exception
 
     async def wait_for_start(self):
         subject = SuperstreamSubjects.START_CLIENT % self.client_hash
@@ -537,8 +654,14 @@ class Superstream:
                 if SuperstreamValues.START_KEY in message_data:
                     if message_data[SuperstreamValues.START_KEY]:
                         self.can_start = True
-                        if SuperstreamValues.OPTIMIZED_CONFIGURATION_KEY in message_data:
-                            self.superstream_configs = message_data[SuperstreamValues.OPTIMIZED_CONFIGURATION_KEY]
+                        self.optimized_config_received = True
+                        if (
+                            SuperstreamValues.OPTIMIZED_CONFIGURATION_KEY
+                            in message_data
+                        ):
+                            self.superstream_configs = message_data[
+                                SuperstreamValues.OPTIMIZED_CONFIGURATION_KEY
+                            ]
                     else:
                         err = message_data.get(SuperstreamValues.ERROR_KEY, "")
                         raise Exception(err)
@@ -547,21 +670,27 @@ class Superstream:
 
         async def is_started():
             while not self.can_start:
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.2)
 
         subscription = None
         try:
             subscription = await self.broker_connection.subscribe(subject, cb=start_cb)
-            # await asyncio.wait_for(is_started(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START)
-            await asyncio.wait_for(is_started(), timeout=60)
+            await asyncio.wait_for(
+                is_started(), timeout=SuperstreamValues.MAX_TIME_WAIT_CAN_START
+            )
             if not self.can_start:
-                self.std.error("superstream: Could not connect to superstream for 10 minutes.")
+                self.std.error(
+                    "superstream: Could not connect to superstream for 10 minutes."
+                )
         except Exception as e:
             self.std.error(f"superstream: Could not start superstream: {e}")
             raise e
         finally:
             if subscription is not None:
                 await subscription.unsubscribe()
+
+    def set_config_update_cb(self, cb: Callable):
+        self._config_update_cb = cb
 
     def process_update(self, update: Update):
         LEARNED_SCHEMA = "LearnedSchema"
@@ -570,7 +699,11 @@ class Superstream:
 
         def learned_schema_handler(payload: bytes):
             schema_update = LearnedSchemaUpdate.model_validate_json(payload)
-            descriptor = compile_descriptor(schema_update.desc, schema_update.master_msg_name, schema_update.file_name)
+            descriptor = compile_descriptor(
+                schema_update.desc,
+                schema_update.master_msg_name,
+                schema_update.file_name,
+            )
             if descriptor:
                 self.producer_proto_desc = descriptor
                 self.producer_schema_id = schema_update.schema_id
@@ -582,15 +715,31 @@ class Superstream:
             self.reduction_enabled = reduction_update.enable_reduction
 
         def compression_update_handler(payload: bytes):
-            if EnvVars.is_compression_disabled():
-                self.compression_enabled = False
-                return
+            try:
+                compression_update = CompressionUpdate.model_validate_json(payload)
+                if compression_update.compression_type:
+                    if not KafkaUtil.is_valid_compression_type(
+                        compression_update.compression_type
+                    ):
+                        raise Exception(
+                            f"invalid compression type: {compression_update.compression_type}"
+                        )
 
-            compression_update = CompressionUpdate.model_validate_json(payload)
-            self.compression_enabled = compression_update.enable_compression
-            self.compression_turned_off_by_superstream = not self.compression_enabled
-            if compression_update.compression_type:
-                self.compression_type = compression_update.compression_type
+                    self.compression_type = compression_update.compression_type
+                    new_config = KafkaUtil.extract_producer_config(self.configs)
+                    compression_config = KafkaUtil.get_compression_config(
+                        self.compression_type, new_config
+                    )
+                    new_config.update(compression_config)
+                    if self._config_update_cb:
+                        self.std.write(
+                            f"superstream: updating producer config with compression type: {self.compression_type}"
+                        )
+                        self._config_update_cb(new_config)
+            except Exception as e:
+                self.std.error(
+                    f"superstream: error processing compression update: {e!s}"
+                )
 
         handlers = {
             LEARNED_SCHEMA: learned_schema_handler,
@@ -622,12 +771,15 @@ class Superstream:
             )
 
         except Exception as e:
-            print(f"superstream: Could not subscribe to updates: {e}")
+            self.std.error(f"superstream: Could not subscribe to updates: {e}")
 
     def update_topic_partitions(self, topic: str, partition: int):
         self.topic_partitions[topic] = self.topic_partitions.get(topic, [])
         if partition not in self.topic_partitions[topic]:
             self.topic_partitions[topic].append(partition)
+
+        if self.topic_partitions and not self._initial_topic_partition_update_sent:
+            asyncio.create_task(self._send_initial_topic_partitions_update())
 
     def set_full_client_configs(self, full_client_configs: Dict[str, Any]):
         self.full_client_configs = full_client_configs
@@ -650,9 +802,13 @@ class Superstream:
             await self.report_clients_update()
             await self.send_client_type_update_req()
         except Exception as e:
-            await self.handle_error(f"superstream: error initializing superstream: {e!s}")
+            await self.handle_error(
+                f"superstream: error initializing superstream: {e!s}"
+            )
 
-    def init_superstream_props(props: Dict[str, Any], client_type: SuperstreamClientType) -> Dict[str, Any]:
+    def init_superstream_props(
+        props: Dict[str, Any], client_type: SuperstreamClientType
+    ) -> Dict[str, Any]:
         props = props.copy()
         try:
             assert EnvVars.SUPERSTREAM_HOST, "superstream host is required"
@@ -697,11 +853,15 @@ class Superstream:
             )
 
         except Exception as e:
-            SuperstreamStd().write(f"superstream: error initializing superstream: {e!s}")
+            SuperstreamStd().write(
+                f"superstream: error initializing superstream: {e!s}"
+            )
 
         return props
 
-    def init_superstream_config(props: Dict[str, Any], client_type: SuperstreamClientType) -> Dict[str, Any]:
+    def init_superstream_config(
+        props: Dict[str, Any], client_type: SuperstreamClientType
+    ) -> Dict[str, Any]:
         props = props.copy()
         try:
             assert EnvVars.SUPERSTREAM_HOST, "superstream host is required"
@@ -714,7 +874,6 @@ class Superstream:
                 enable_reduction=EnvVars.SUPERSTREAM_REDUCTION_ENABLED,
                 client_type=client_type.value,
                 tags=EnvVars.SUPERSTREAM_TAGS,
-                enable_compression=EnvVars.SUPERSTREAM_COMPRESSION_ENABLED,
             )
 
             def run_event_loop(loop):
@@ -747,7 +906,11 @@ class Superstream:
             )
 
         except Exception as e:
-            SuperstreamStd().write(f"superstream: error initializing superstream: {e!s}")
+            SuperstreamStd().write(
+                f"superstream: error initializing superstream: {e!s}"
+            )
+
+        return props
 
     def close(self):
         try:
