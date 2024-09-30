@@ -121,19 +121,44 @@ pipeline {
     }
     post {
         always {
-            cleanWs()
+                cleanWs()
         }
-        success {           
-          script {
-            if (env.BRANCH_NAME == '2.4.0') {  
+        success {
+          script {  
+            if (env.BRANCH_NAME == '2.4.0') {
                 sendSlackNotification('SUCCESS')
             }
-          }            
+          }
         }
         failure {
           script {
             if (env.BRANCH_NAME == '2.4.0') {  
                 sendSlackNotification('FAILURE')
+            }
+          }
+        }        
+        aborted {
+          script {
+            if (env.BRANCH_NAME == '2.4.0') {
+                sendSlackNotification('ABORTED')
+            }
+            // Get the build log to check for the specific exception
+            def buildLog = currentBuild.rawBuild.getLog(50)
+            // Log the build log for debugging purposes (you can remove this once confirmed)
+            echo "Build Log:\n${buildLog.join('\n')}"
+            // Check if the log contains the specific exception using a regular expression
+            if (buildLog.find { it =~ /org\.jenkinsci\.plugins\.workflow\.support\.steps\.AgentOfflineException/ }) {
+                echo 'AgentOfflineException found, retrying the build...'
+                // Check if the build has parameters and rerun the job accordingly
+                def paramsList = currentBuild.rawBuild.getAction(hudson.model.ParametersAction)?.parameters
+                if (paramsList) {
+                    build(job: env.JOB_NAME, parameters: paramsList)
+                } else {
+                    echo 'No parameters found, rerunning without parameters'
+                    build(job: env.JOB_NAME)
+                }
+            } else {
+                echo 'Abort not related to AgentOfflineException, not retrying.'
             }
           }
         }
@@ -143,18 +168,21 @@ pipeline {
 // SlackSend Function
 def sendSlackNotification(String jobResult) {
     def jobUrl = env.BUILD_URL
-    def messageDetail = env.COMMIT_MESSAGE ? "Commit/PR by ${env.GIT_AUTHOR}:\n${env.COMMIT_MESSAGE}" : "No commit message available."
+    def messageDetail = env.COMMIT_MESSAGE ? "Commit/PR by @${env.GIT_AUTHOR}:\n${env.COMMIT_MESSAGE}" : "No commit message available."
     def projectName = env.JOB_NAME
+
+    // Define the color based on the job result
+    def color = jobResult == 'SUCCESS' ? 'good' : (jobResult == 'ABORTED' ? '#808080' : 'danger')
 
     slackSend (
         channel: "${env.SLACK_CHANNEL}",
-        color: jobResult == 'SUCCESS' ? 'good' : 'danger',
+        color: color,
         message: """\
 *:rocket: Jenkins Build Notification :rocket:*
 
 *Project:* `${projectName}`
 *Build Number:* `#${env.BUILD_NUMBER}`
-*Status:* ${jobResult == 'SUCCESS' ? ':white_check_mark: *Success*' : ':x: *Failure*'}
+*Status:* ${jobResult == 'SUCCESS' ? ':white_check_mark: *Success*' : (jobResult == 'ABORTED' ? ':warning: *Aborted*' : ':x: *Failure*')}
 
 :information_source: ${messageDetail}
 Triggered by: ${env.TRIGGERED_BY}
