@@ -1,6 +1,8 @@
+import asyncio
 import base64
 import json
-from typing import Any, Dict, Optional, Union
+import threading
+from typing import Any, Coroutine, Dict, Optional, Union
 
 from google.protobuf import descriptor_pb2, descriptor_pool, json_format
 from google.protobuf.message_factory import GetMessageClass
@@ -596,3 +598,21 @@ class KafkaUtil:
                     relevant_props[key] = str(configs[key])
 
         return relevant_props
+
+
+class TaskUtil:
+    _event_loop = None
+    @staticmethod
+    def create_task(task: Coroutine[Any, Any, None]) -> asyncio.Task:
+        if TaskUtil._event_loop and TaskUtil._event_loop.is_running():
+            return TaskUtil._event_loop.create_task(task)
+        
+        try:
+            TaskUtil._event_loop = asyncio.get_running_loop()
+        except Exception:
+            new_loop = asyncio.new_event_loop()
+            bg_thread = threading.Thread(target=new_loop.run_forever, daemon=True)
+            bg_thread.start()
+            TaskUtil._event_loop = new_loop
+
+        return TaskUtil._event_loop.create_task(task)

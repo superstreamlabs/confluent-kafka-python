@@ -44,7 +44,12 @@ from confluent_kafka.superstream.types import (
     Update,
 )
 from confluent_kafka.superstream.update_manager import SuperstreamUpdateManager
-from confluent_kafka.superstream.utils import KafkaUtil, _name, compile_descriptor
+from confluent_kafka.superstream.utils import (
+    KafkaUtil,
+    TaskUtil,
+    _name,
+    compile_descriptor,
+)
 
 
 class Superstream:
@@ -393,7 +398,7 @@ class Superstream:
                     await update_task()
                     await asyncio.sleep(interval)
 
-            asyncio.create_task(task_wrapper())
+            TaskUtil.create_task(task_wrapper())
 
         await start_periodic_task(10 * 60, client_update_task)
 
@@ -764,7 +769,7 @@ class Superstream:
             )
 
             # ruff: noqa: RUF006
-            asyncio.create_task(self.update_manager.listen_update())
+            TaskUtil.create_task(self.update_manager.listen_update())
 
             self.update_manager.subscription = await self.broker_connection.subscribe(
                 subject, cb=self.update_manager.update_handler
@@ -779,11 +784,12 @@ class Superstream:
             self.topic_partitions[topic].append(partition)
 
         if self.topic_partitions and not self._initial_topic_partition_update_sent:
-            asyncio.create_task(self._send_initial_topic_partitions_update())
+            TaskUtil.create_task(self._send_initial_topic_partitions_update())
 
     def set_full_client_configs(self, full_client_configs: Dict[str, Any]):
         self.full_client_configs = full_client_configs
-        asyncio.create_task(self.execute_send_client_config_update_req_with_wait())
+        TaskUtil.create_task(self.execute_send_client_config_update_req_with_wait())
+
 
     async def init(self):
         try:

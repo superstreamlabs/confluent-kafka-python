@@ -2,7 +2,7 @@ import os
 
 
 class SdkInfo:
-    VERSION = "2.4.0.2"
+    VERSION = "2.4.0.3"
     LANGUAGE = "python"
 
 
