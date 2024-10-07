@@ -45,6 +45,7 @@ from .deserializing_consumer import DeserializingConsumer
 from .error import KafkaError, KafkaException
 from .serializing_producer import SerializingProducer
 from .superstream.factory import SuperstreamFactory
+from .superstream.std import SuperstreamStd
 from .superstream.superstream_consumer import SuperstreamConsumer as Consumer
 from .superstream.superstream_producer import SuperstreamProducer as Producer
 
@@ -64,7 +65,7 @@ SuperstreamFactory.set_consumer(ConfluentConsumer)
 SuperstreamFactory.set_producer(ConfluentProducer)
 SuperstreamFactory.set_topic_partition(TopicPartition)
 nest_asyncio.apply()
-
+SuperstreamStd().write("Superstream library loaded")
 class ThrottleEvent(object):
     """
     ThrottleEvent contains details about a throttled request.
