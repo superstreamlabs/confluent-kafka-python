@@ -15,6 +15,71 @@ To leverage the full capabilities of the Superstream SDK, it is essential to set
 > [!IMPORTANT]  
 > __Ensure that these environment variables are properly configured in your system to fully utilize the enhanced features offered by Superstream SDK.__
 
+## Install - Superstream-Confluent-Kafka
+
+**Install self-contained binary wheels**
+
+    $ pip install superstream-confluent-kafka
+
+**NOTE:** You must install librdkafka and its dependencies using
+          the repositories below.
+
+**Install on Mac OS**
+```bash
+# Install librdkafka from homebrew
+brew install librdkafka
+
+# Add the following paths if needed
+export C_INCLUDE_PATH="/opt/homebrew/include"
+export LIBRARY_PATH="/opt/homebrew/lib"
+```
+
+**Install on RedHat, CentOS, Fedora, etc**
+```bash
+#
+# Perform these steps as the root user (e.g., in a 'sudo bash' shell)
+#
+
+# Install build tools if needed.
+yum install -y python3 python3-pip python3-devel gcc make
+
+# Install the latest version of librdkafka:
+rpm --import https://packages.confluent.io/rpm/7.0/archive.key
+
+echo '
+[Confluent-Clients]
+name=Confluent Clients repository
+baseurl=https://packages.confluent.io/clients/rpm/centos/$releasever/$basearch
+gpgcheck=1
+gpgkey=https://packages.confluent.io/clients/rpm/archive.key
+enabled=1' > /etc/yum.repos.d/confluent.repo
+
+yum install -y librdkafka-devel
+```
+
+**Install on Debian or Ubuntu**
+```bash
+#
+# Perform these steps as the root user (e.g., in a 'sudo bash' shell)
+#
+
+# Install build tools.
+
+apt install -y software-properties-common lsb-release gcc make python3 python3-pip python3-dev
+
+# Install the latest version of librdkafka:
+
+wget -qO - https://packages.confluent.io/deb/7.0/archive.key | apt-key add -
+
+add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
+
+apt update
+
+apt install -y librdkafka-dev
+```
+
+
+
 Confluent's Python Client for Apache Kafka<sup>TM</sup>
 =======================================================
 
