@@ -1,4 +1,4 @@
-# Superstream-Kafka
+# Superstream Python Kafka package
 
 ## Configuration for Superstream SDK
 
