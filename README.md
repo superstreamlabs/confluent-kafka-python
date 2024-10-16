@@ -1,30 +1,20 @@
-# Superstream-Kafka
+# Superstream Python Kafka package
 
-## Configuration for Superstream SDK
+- Superstream Python package is a replacement for [confluent-kafka](https://github.com/confluentinc/confluent-kafka-python) package.
+- Your app can only use one of the packages at a time. Adding both to the same app will cause the Superstream package to be ignored.
+- To use the Superstream package in your app, it must be the sole package in use.
 
-To leverage the full capabilities of the Superstream SDK, it is essential to set the environment variables provided in the table below before initializing the SDK. Without setting-up the environment variables, the SDK will function as a standard Kafka SDK.
+## Installation
+### Step 1: Package installation
 
-| Environment Variable                | Default          | Required  | Description                                                                                           |
-|-------------------------------------|------------------|-----------|-------------------------------------------------------------------------------------------------------|
-| `SUPERSTREAM_HOST`                  | -                | Yes       | Specify the host URL of the Superstream service to connect to the appropriate Superstream environment. |
-| `SUPERSTREAM_TOKEN`                 | -                | No        | This authentication token is required when the engine is configured to work with local authentication, to securely access the Superstream services. |
-| `SUPERSTREAM_TAGS`                  | Empty string     | No        | Set this variable to tag the client. This value of this variable should be a valid JSON string.            |
-| `SUPERSTREAM_DEBUG`                 | False            | No        | Set this variable to true to enable Superstream logs. By default, there will not be any Superstream related logs. |
-| `SUPERSTREAM_RESPONSE_TIMEOUT`       | 3000            | No        | Set this variable to specify the timeout in milliseconds for the Superstream service response.         |
-
-> [!IMPORTANT]  
-> __Ensure that these environment variables are properly configured in your system to fully utilize the enhanced features offered by Superstream SDK.__
-
-## Install - Superstream-Confluent-Kafka
-
-**Install self-contained binary wheels**
+**Using pip**
 
     $ pip install superstream-confluent-kafka
 
-**NOTE:** You must install librdkafka and its dependencies using
+**NOTE:** You must install `librdkafka` and its dependencies using
           the repositories below.
 
-**Install on Mac OS**
+**Install `librdkafka` on Mac OS**
 ```bash
 # Install librdkafka from homebrew
 brew install librdkafka
@@ -34,7 +24,7 @@ export C_INCLUDE_PATH="/opt/homebrew/include"
 export LIBRARY_PATH="/opt/homebrew/lib"
 ```
 
-**Install on RedHat, CentOS, Fedora, etc**
+**Install `librdkafka` on RedHat, CentOS, Fedora, etc**
 ```bash
 #
 # Perform these steps as the root user (e.g., in a 'sudo bash' shell)
@@ -57,7 +47,7 @@ enabled=1' > /etc/yum.repos.d/confluent.repo
 yum install -y librdkafka-devel
 ```
 
-**Install on Debian or Ubuntu**
+**Install `librdkafka` on Debian or Ubuntu**
 ```bash
 #
 # Perform these steps as the root user (e.g., in a 'sudo bash' shell)
@@ -78,38 +68,29 @@ apt update
 apt install -y librdkafka-dev
 ```
 
+### Step 2: Configuration
 
+To fully utilize the Superstream package's capabilities, it is essential to set the environment variables provided in the table below before initializing the package. 
+The Superstream package will function as a standard confluent-kafka package in the following scenarios:
+- When a required environment variable is not configured
+- If Superstream becomes unresponsive
 
-Confluent's Python Client for Apache Kafka<sup>TM</sup>
-=======================================================
+**A required env var/s to set**
+| Environment Variable                | Default          | Example  | Required  | Description                                                                                           |
+|-------------------------------------|------------------|-----------|-----------|-------------------------------------------------------------------------------------------------------|
+| `SUPERSTREAM_HOST`                  | -                | engine.superstream.org.com       | Yes       | Specify the host URL of the Superstream service to connect to the appropriate Superstream environment. |
 
-**confluent-kafka-python** provides a high-level Producer, Consumer and AdminClient compatible with all
-[Apache Kafka<sup>TM<sup>](http://kafka.apache.org/) brokers >= v0.8, [Confluent Cloud](https://www.confluent.io/confluent-cloud/)
-and [Confluent Platform](https://www.confluent.io/product/compare/). The client is:
+**Optional env var/s for enhanced capabilities**
 
-- **Reliable** - It's a wrapper around [librdkafka](https://github.com/edenhill/librdkafka) (provided automatically via binary wheels) which is widely deployed in a diverse set of production scenarios. It's tested using [the same set of system tests](https://github.com/confluentinc/confluent-kafka-python/tree/master/src/confluent_kafka/kafkatest) as the Java client [and more](https://github.com/confluentinc/confluent-kafka-python/tree/master/tests). It's supported by [Confluent](https://confluent.io).
+| Environment Variable                | Default          | Example  | Required  | Description                                                                                           |
+|-------------------------------------|------------------|-----------|-----------|-------------------------------------------------------------------------------------------------------|
+| `SUPERSTREAM_TOKEN`                 | -                | 096cc4891d91034272fbc3dae2a53ad4       | No        | This authentication token is required when the engine is configured to work with local authentication, to securely access the Superstream services. |
+| `SUPERSTREAM_TAGS`                  | -     | {"config":"dev","owner":"bi_app"}       | No        | Set this variable to tag the client. This value of this variable should be a valid JSON string.            |
+| `SUPERSTREAM_DEBUG`                 | False            | True       | No        | Set this variable to true to enable Superstream logs. By default, there will not be any Superstream related logs. |
+| `SUPERSTREAM_RESPONSE_TIMEOUT`       | 3000            | Yes       | No        | Set this variable to specify a timeout in milliseconds to wait for the Superstream service response.         |
 
-- **Performant** - Performance is a key design consideration. Maximum throughput is on par with the Java client for larger message sizes (where the overhead of the Python interpreter has less impact). Latency is on par with the Java client.
+### Step 3: Validation
 
-- **Future proof** - Confluent, founded by the
-creators of Kafka, is building a [streaming platform](https://www.confluent.io/product/compare/)
-with Apache Kafka at its core. It's high priority for us that client features keep
-pace with core Apache Kafka and components of the [Confluent Platform](https://www.confluent.io/product/compare/).
-
-
-## Usage
-
-For a step-by-step guide on using the client see [Getting Started with Apache Kafka and Python](https://developer.confluent.io/get-started/python/).
-
-Aditional examples can be found in the [examples](examples) directory or the [confluentinc/examples](https://github.com/confluentinc/examples/tree/master/clients/cloud/python) github repo, which include demonstration of:
-- Exactly once data processing using the transactional API.
-- Integration with asyncio.
-- (De)serializing Protobuf, JSON, and Avro data with Confluent Schema Registry integration.
-- [Confluent Cloud](https://www.confluent.io/confluent-cloud/) configuration.
-
-Also refer to the [API documentation](http://docs.confluent.io/current/clients/confluent-kafka-python/index.html).
-
-Finally, the [tests](tests) are useful as a reference for example usage.
 
 ### Basic Producer Example
 
@@ -171,107 +152,6 @@ while True:
 
 c.close()
 ```
-
-
-### Basic AdminClient Example
-
-Create topics:
-
-```python
-from confluent_kafka.admin import AdminClient, NewTopic
-
-a = AdminClient({'bootstrap.servers': 'mybroker'})
-
-new_topics = [NewTopic(topic, num_partitions=3, replication_factor=1) for topic in ["topic1", "topic2"]]
-# Note: In a multi-cluster production scenario, it is more typical to use a replication_factor of 3 for durability.
-
-# Call create_topics to asynchronously create topics. A dict
-# of <topic,future> is returned.
-fs = a.create_topics(new_topics)
-
-# Wait for each operation to finish.
-for topic, f in fs.items():
-    try:
-        f.result()  # The result itself is None
-        print("Topic {} created".format(topic))
-    except Exception as e:
-        print("Failed to create topic {}: {}".format(topic, e))
-```
-
-
-## Thread Safety
-
-The `Producer`, `Consumer` and `AdminClient` are all thread safe.
-
-
-## Install
-
-**Install self-contained binary wheels**
-
-    $ pip install confluent-kafka
-
-**NOTE:** The pre-built Linux wheels do NOT contain SASL Kerberos/GSSAPI support.
-          If you need SASL Kerberos/GSSAPI support you must install librdkafka and
-          its dependencies using the repositories below and then build
-          confluent-kafka using the instructions in the
-          "Install from source" section below.
-
-**Install from source**
-
-For source install, see the *Install from source* section in [INSTALL.md](INSTALL.md).
-
-
-## Broker Compatibility
-
-The Python client (as well as the underlying C library librdkafka) supports
-all broker versions &gt;= 0.8.
-But due to the nature of the Kafka protocol in broker versions 0.8 and 0.9 it
-is not safe for a client to assume what protocol version is actually supported
-by the broker, thus you will need to hint the Python client what protocol
-version it may use. This is done through two configuration settings:
-
- * `broker.version.fallback=YOUR_BROKER_VERSION` (default 0.9.0.1)
- * `api.version.request=true|false` (default true)
-
-When using a Kafka 0.10 broker or later you don't need to do anything
-(`api.version.request=true` is the default).
-If you use Kafka broker 0.9 or 0.8 you must set
-`api.version.request=false` and set
-`broker.version.fallback` to your broker version,
-e.g `broker.version.fallback=0.9.0.1`.
-
-More info here:
-https://github.com/edenhill/librdkafka/wiki/Broker-version-compatibility
-
-
-## SSL certificates
-
-If you're connecting to a Kafka cluster through SSL you will need to configure
-the client with `'security.protocol': 'SSL'` (or `'SASL_SSL'` if SASL
-authentication is used).
-
-The client will use CA certificates to verify the broker's certificate.
-The embedded OpenSSL library will look for CA certificates in `/usr/lib/ssl/certs/`
-or `/usr/lib/ssl/cacert.pem`. CA certificates are typically provided by the
-Linux distribution's `ca-certificates` package which needs to be installed
-through `apt`, `yum`, et.al.
-
-If your system stores CA certificates in another location you will need to
-configure the client with `'ssl.ca.location': '/path/to/cacert.pem'`.
-
-Alternatively, the CA certificates can be provided by the [certifi](https://pypi.org/project/certifi/)
-Python package. To use certifi, add an `import certifi` line and configure the
-client's CA location with `'ssl.ca.location': certifi.where()`.
-
-
-## License
-
-[Apache License v2.0](http://www.apache.org/licenses/LICENSE-2.0)
-
-KAFKA is a registered trademark of The Apache Software Foundation and has been licensed for use
-by confluent-kafka-python. confluent-kafka-python has no affiliation with and is not endorsed by
-The Apache Software Foundation.
-
 
 ## Developer Notes
 
