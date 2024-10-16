@@ -1,19 +1,23 @@
 # Superstream Python Kafka package
 
+## Installation
+### Step 1: Package installation
+
+
 ## Configuration for Superstream SDK
 
 To leverage the full capabilities of the Superstream SDK, it is essential to set the environment variables provided in the table below before initializing the SDK. Without setting-up the environment variables, the SDK will function as a standard Kafka SDK.
 
-| Environment Variable                | Default          | Required  | Description                                                                                           |
-|-------------------------------------|------------------|-----------|-------------------------------------------------------------------------------------------------------|
-| `SUPERSTREAM_HOST`                  | -                | Yes       | Specify the host URL of the Superstream service to connect to the appropriate Superstream environment. |
-| `SUPERSTREAM_TOKEN`                 | -                | No        | This authentication token is required when the engine is configured to work with local authentication, to securely access the Superstream services. |
-| `SUPERSTREAM_TAGS`                  | Empty string     | No        | Set this variable to tag the client. This value of this variable should be a valid JSON string.            |
-| `SUPERSTREAM_DEBUG`                 | False            | No        | Set this variable to true to enable Superstream logs. By default, there will not be any Superstream related logs. |
-| `SUPERSTREAM_RESPONSE_TIMEOUT`       | 3000            | No        | Set this variable to specify the timeout in milliseconds for the Superstream service response.         |
+| Environment Variable                | Default          | Example  | Required  | Description                                                                                           |
+|-------------------------------------|------------------|-----------|-----------|-------------------------------------------------------------------------------------------------------|
+| `SUPERSTREAM_HOST`                  | -                | engine.superstream.org.com       | Yes       | Specify the host URL of the Superstream service to connect to the appropriate Superstream environment. |
+| `SUPERSTREAM_TOKEN`                 | -                | 096cc4891d91034272fbc3dae2a53ad4       | No        | This authentication token is required when the engine is configured to work with local authentication, to securely access the Superstream services. |
+| `SUPERSTREAM_TAGS`                  | -     | {"config":"dev","owner":"bi_app"}       | No        | Set this variable to tag the client. This value of this variable should be a valid JSON string.            |
+| `SUPERSTREAM_DEBUG`                 | False            | True       | No        | Set this variable to true to enable Superstream logs. By default, there will not be any Superstream related logs. |
+| `SUPERSTREAM_RESPONSE_TIMEOUT`       | 3000            | Yes       | No        | Set this variable to specify a timeout in milliseconds to wait for the Superstream service response.         |
 
 > [!IMPORTANT]  
-> __Ensure that these environment variables are properly configured in your system to fully utilize the enhanced features offered by Superstream SDK.__
+> __The application must have the required environment variables configured to be recognized by Superstream.__
 
 Confluent's Python Client for Apache Kafka<sup>TM</sup>
 =======================================================
